@@ -109,6 +109,98 @@ export type Database = {
           },
         ]
       }
+      expense_categories: {
+        Row: { created_at: string; id: string; name: string }
+        Insert: { created_at?: string; id?: string; name: string }
+        Update: { created_at?: string; id?: string; name?: string }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount_minor: number
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          incurred_on: string
+          receipt_ref: string | null
+          recorded_by: string
+        }
+        Insert: {
+          amount_minor: number
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incurred_on: string
+          receipt_ref?: string | null
+          recorded_by: string
+        }
+        Update: {
+          amount_minor?: number
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incurred_on?: string
+          receipt_ref?: string | null
+          recorded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_requests: {
+        Row: {
+          completed_at: string | null
+          export_type: string
+          filters: Json | null
+          id: string
+          requested_at: string
+          requested_by: string
+          row_count: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          export_type: string
+          filters?: Json | null
+          id?: string
+          requested_at?: string
+          requested_by: string
+          row_count?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          export_type?: string
+          filters?: Json | null
+          id?: string
+          requested_at?: string
+          requested_by?: string
+          row_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_schedules: {
         Row: {
           amount_due_minor: number
@@ -1383,6 +1475,10 @@ export type Database = {
         Returns: undefined
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }
+      complete_export: {
+        Args: { p_export_request_id: string; p_row_count: number }
+        Returns: undefined
+      }
       compute_results: { Args: { p_exam_term_id: string }; Returns: number }
       current_staff_id: { Args: never; Returns: string }
       finalize_payroll_run: {
@@ -1447,6 +1543,10 @@ export type Database = {
       reopen_for_correction: {
         Args: { p_reason: string; p_result_id: string }
         Returns: undefined
+      }
+      request_export: {
+        Args: { p_export_type: string; p_filters: Json }
+        Returns: string
       }
     }
     Enums: {
