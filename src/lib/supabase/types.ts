@@ -697,6 +697,124 @@ export type Database = {
           },
         ]
       }
+      results: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          exam_term_id: string
+          id: string
+          overall_grade: string | null
+          percentage: number | null
+          published_at: string | null
+          rejection_reason: string | null
+          status: string
+          student_id: string
+          total_max: number | null
+          total_obtained: number | null
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          exam_term_id: string
+          id?: string
+          overall_grade?: string | null
+          percentage?: number | null
+          published_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          student_id: string
+          total_max?: number | null
+          total_obtained?: number | null
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          exam_term_id?: string
+          id?: string
+          overall_grade?: string | null
+          percentage?: number | null
+          published_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          student_id?: string
+          total_max?: number | null
+          total_obtained?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "results_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "results_exam_term_id_fkey"
+            columns: ["exam_term_id"]
+            isOneToOne: false
+            referencedRelation: "exam_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "results_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      results_audit: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          new_status: string
+          note: string | null
+          old_status: string | null
+          result_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+          result_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+          result_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "results_audit_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "results_audit_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_adjustments: {
         Row: {
           amount_minor: number
@@ -1172,11 +1290,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      approve_results: { Args: { p_result_ids: string[] }; Returns: number }
       assign_role: {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }
+      compute_results: { Args: { p_exam_term_id: string }; Returns: number }
       current_staff_id: { Args: never; Returns: string }
       finalize_payroll_run: {
         Args: { p_payroll_run_id: string }
@@ -1205,6 +1325,7 @@ export type Database = {
         Args: { p_payment_method: string; p_payslip_id: string }
         Returns: undefined
       }
+      publish_results: { Args: { p_result_ids: string[] }; Returns: number }
       recompute_fee_schedule_status: {
         Args: { p_fee_schedule_id: string }
         Returns: undefined
@@ -1222,6 +1343,14 @@ export type Database = {
           payment_id: string
           receipt_number: string
         }[]
+      }
+      reject_results: {
+        Args: { p_reason: string; p_result_ids: string[] }
+        Returns: number
+      }
+      reopen_for_correction: {
+        Args: { p_reason: string; p_result_id: string }
+        Returns: undefined
       }
     }
     Enums: {

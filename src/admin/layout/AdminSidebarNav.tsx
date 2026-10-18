@@ -10,6 +10,7 @@ import {
   Banknote,
   CalendarRange,
   PenSquare,
+  CheckSquare,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: "Payroll", to: "/admin/payroll", icon: Banknote, roles: ["principal", "accountant"] },
   { label: "Exam Terms", to: "/admin/exam-terms", icon: CalendarRange, roles: ["principal"] },
   { label: "Marks Entry", to: "/admin/marks", icon: PenSquare, roles: ["teacher"] },
+  { label: "Results Review", to: "/admin/results", icon: CheckSquare, roles: ["principal"] },
 ];
 
 const AdminSidebarNav = () => {
