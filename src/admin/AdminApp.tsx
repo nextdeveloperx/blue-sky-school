@@ -17,6 +17,7 @@ import ResultsReviewPage from "./features/results/ResultsReviewPage";
 import LinkRequestsQueue from "./features/parents/LinkRequestsQueue";
 import ExpensesPage from "./features/expenses/ExpensesPage";
 import ExportsPage from "./features/exports/ExportsPage";
+import AuditLogPage from "./features/audit/AuditLogPage";
 
 const AdminApp = () => (
   <Routes>
@@ -42,6 +43,7 @@ const AdminApp = () => (
               <Route path="/parent-requests" element={<LinkRequestsQueue />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/exports" element={<ExportsPage />} />
+              <Route path="/audit-log" element={<AuditLogPage />} />
             </Routes>
           </AdminShell>
         </RequireRole>
