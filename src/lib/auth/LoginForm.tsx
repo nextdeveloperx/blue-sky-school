@@ -18,7 +18,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -30,6 +30,7 @@ interface LoginFormProps {
 
 export function LoginForm({ title, redirectTo }: LoginFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const navigate = useNavigate();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +40,23 @@ export function LoginForm({ title, redirectTo }: LoginFormProps) {
   async function onSubmit(values: LoginValues) {
     setIsSubmitting(true);
     const supabase = getSupabaseClient();
+
+    if (mode === "sign-up") {
+      const { data, error } = await supabase.auth.signUp(values);
+      setIsSubmitting(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (!data.session) {
+        toast.success("Account created. Check your email to confirm, then sign in.");
+        setMode("sign-in");
+        return;
+      }
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword(values);
     setIsSubmitting(false);
 
@@ -74,17 +92,34 @@ export function LoginForm({ title, redirectTo }: LoginFormProps) {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" autoComplete="current-password" {...field} />
+                  <Input
+                    type="password"
+                    autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting
+              ? mode === "sign-up"
+                ? "Creating account…"
+                : "Signing in…"
+              : mode === "sign-up"
+                ? "Create account"
+                : "Sign in"}
           </Button>
         </form>
       </Form>
+      <button
+        type="button"
+        className="text-sm text-muted-foreground hover:text-primary w-full text-center"
+        onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
+      >
+        {mode === "sign-in" ? "Need an account? Create one" : "Already have an account? Sign in"}
+      </button>
     </div>
   );
 }
