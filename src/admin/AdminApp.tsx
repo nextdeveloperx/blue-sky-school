@@ -5,6 +5,9 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import AdminLoginPage from "./auth/AdminLoginPage";
 import AcademicSetupPage from "./features/academics/AcademicSetupPage";
 import StudentsPage from "./features/students/StudentsPage";
+import StaffPage from "./features/staff/StaffPage";
+import TeacherAssignmentsPage from "./features/assignments/TeacherAssignmentsPage";
+import MyRosterPage from "./features/roster/MyRosterPage";
 
 const AdminApp = () => (
   <Routes>
@@ -18,6 +21,9 @@ const AdminApp = () => (
               <Route path="/" element={<DashboardPage />} />
               <Route path="/academics" element={<AcademicSetupPage />} />
               <Route path="/students" element={<StudentsPage />} />
+              <Route path="/staff" element={<StaffPage />} />
+              <Route path="/assignments" element={<TeacherAssignmentsPage />} />
+              <Route path="/my-roster" element={<MyRosterPage />} />
             </Routes>
           </AdminShell>
         </RequireRole>

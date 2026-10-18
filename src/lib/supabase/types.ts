@@ -372,6 +372,68 @@ export type Database = {
           },
         ]
       }
+      teacher_subject_assignments: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          section_id: string
+          subject_id: string
+          teacher_staff_id: string
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          section_id: string
+          subject_id: string
+          teacher_staff_id: string
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          section_id?: string
+          subject_id?: string
+          teacher_staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subject_assignments_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subject_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subject_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subject_assignments_teacher_staff_id_fkey"
+            columns: ["teacher_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -391,11 +453,54 @@ export type Database = {
           role?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_profile_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      teacher_roster: {
+        Row: {
+          admission_no: string | null
+          class_name: string | null
+          full_name: string | null
+          section_id: string | null
+          section_name: string | null
+          student_id: string | null
+          subject_id: string | null
+          subject_name: string | null
+          teacher_staff_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subject_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subject_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subject_assignments_teacher_staff_id_fkey"
+            columns: ["teacher_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       assign_role: {

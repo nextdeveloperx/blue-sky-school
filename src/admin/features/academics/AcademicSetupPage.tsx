@@ -45,11 +45,26 @@ export default function AcademicSetupPage() {
     },
   });
 
+  const { data: subjects } = useQuery({
+    queryKey: ["subjects", currentYear?.id],
+    enabled: !!currentYear,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("*")
+        .eq("academic_year_id", currentYear!.id)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const [yearLabel, setYearLabel] = useState("");
   const [yearStart, setYearStart] = useState("");
   const [yearEnd, setYearEnd] = useState("");
   const [className, setClassName] = useState("");
   const [sectionTargets, setSectionTargets] = useState<Record<string, string>>({});
+  const [subjectName, setSubjectName] = useState("");
 
   async function createYear() {
     if (!yearLabel || !yearStart || !yearEnd) {
@@ -92,6 +107,27 @@ export default function AcademicSetupPage() {
     toast.success("Class created");
     setClassName("");
     queryClient.invalidateQueries({ queryKey: ["classes", currentYear.id] });
+  }
+
+  async function createSubject() {
+    if (!currentYear) {
+      toast.error("Create an academic year first");
+      return;
+    }
+    if (!subjectName) {
+      toast.error("Subject name is required");
+      return;
+    }
+    const { error } = await supabase
+      .from("subjects")
+      .insert({ academic_year_id: currentYear.id, name: subjectName });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Subject created");
+    setSubjectName("");
+    queryClient.invalidateQueries({ queryKey: ["subjects", currentYear.id] });
   }
 
   async function createSection(classId: string) {
@@ -195,6 +231,35 @@ export default function AcademicSetupPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading font-semibold text-lg">
+          Subjects {currentYear ? `(${currentYear.label})` : ""}
+        </h2>
+        {!currentYear && (
+          <p className="text-muted-foreground text-sm">Create an academic year first.</p>
+        )}
+        {currentYear && (
+          <>
+            <ul className="text-sm text-muted-foreground flex flex-wrap gap-2">
+              {subjects?.map((s) => (
+                <li key={s.id} className="px-3 py-1 rounded-full bg-muted">
+                  {s.name}
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2 items-end">
+              <div>
+                <label className="text-sm text-muted-foreground">
+                  Subject name (e.g. Mathematics)
+                </label>
+                <Input value={subjectName} onChange={(e) => setSubjectName(e.target.value)} />
+              </div>
+              <Button onClick={createSubject}>Add subject</Button>
             </div>
           </>
         )}
