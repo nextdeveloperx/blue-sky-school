@@ -10,6 +10,7 @@ import TeacherAssignmentsPage from "./features/assignments/TeacherAssignmentsPag
 import MyRosterPage from "./features/roster/MyRosterPage";
 import FeesPage from "./features/fees/FeesPage";
 import PaymentsPage from "./features/fees/PaymentsPage";
+import PayrollPage from "./features/payroll/PayrollPage";
 
 const AdminApp = () => (
   <Routes>
@@ -28,6 +29,7 @@ const AdminApp = () => (
               <Route path="/my-roster" element={<MyRosterPage />} />
               <Route path="/fees" element={<FeesPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/payroll" element={<PayrollPage />} />
             </Routes>
           </AdminShell>
         </RequireRole>

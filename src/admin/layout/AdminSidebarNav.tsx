@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Wallet,
   Receipt,
+  Banknote,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { label: "My Roster", to: "/admin/my-roster", icon: ClipboardList, roles: ["teacher"] },
   { label: "Fees", to: "/admin/fees", icon: Wallet, roles: ["principal", "accountant"] },
   { label: "Payments", to: "/admin/payments", icon: Receipt, roles: ["principal", "accountant"] },
+  { label: "Payroll", to: "/admin/payroll", icon: Banknote, roles: ["principal", "accountant"] },
 ];
 
 const AdminSidebarNav = () => {

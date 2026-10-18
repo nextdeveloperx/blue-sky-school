@@ -284,6 +284,92 @@ export type Database = {
           },
         ]
       }
+      payroll_runs: {
+        Row: {
+          created_at: string
+          finalized_at: string | null
+          generated_by: string
+          id: string
+          period_month: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          finalized_at?: string | null
+          generated_by: string
+          id?: string
+          period_month: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          finalized_at?: string | null
+          generated_by?: string
+          id?: string
+          period_month?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslips: {
+        Row: {
+          adjustments_total_minor: number
+          base_amount_minor: number
+          created_at: string
+          id: string
+          net_amount_minor: number
+          paid_at: string | null
+          payment_method: string | null
+          payroll_run_id: string
+          staff_id: string
+        }
+        Insert: {
+          adjustments_total_minor?: number
+          base_amount_minor: number
+          created_at?: string
+          id?: string
+          net_amount_minor: number
+          paid_at?: string | null
+          payment_method?: string | null
+          payroll_run_id: string
+          staff_id: string
+        }
+        Update: {
+          adjustments_total_minor?: number
+          base_amount_minor?: number
+          created_at?: string
+          id?: string
+          net_amount_minor?: number
+          paid_at?: string | null
+          payment_method?: string | null
+          payroll_run_id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -399,6 +485,61 @@ export type Database = {
           },
         ]
       }
+      salary_adjustments: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          payroll_run_id: string
+          reason: string
+          staff_id: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: string
+          payroll_run_id: string
+          reason: string
+          staff_id: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          payroll_run_id?: string
+          reason?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_adjustments_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_adjustments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sections: {
         Row: {
           class_id: string
@@ -472,6 +613,41 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_salaries: {
+        Row: {
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          monthly_amount_minor: number
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          monthly_amount_minor: number
+          staff_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          monthly_amount_minor?: number
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_salaries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
         ]
@@ -774,15 +950,33 @@ export type Database = {
       }
     }
     Functions: {
+      add_salary_adjustment: {
+        Args: {
+          p_amount_minor: number
+          p_kind: string
+          p_payroll_run_id: string
+          p_reason: string
+          p_staff_id: string
+        }
+        Returns: undefined
+      }
       assign_role: {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }
       current_staff_id: { Args: never; Returns: string }
+      finalize_payroll_run: {
+        Args: { p_payroll_run_id: string }
+        Returns: undefined
+      }
       generate_monthly_fee_schedules: {
         Args: { p_academic_year_id: string; p_period_month: string }
         Returns: number
+      }
+      generate_payroll_run: {
+        Args: { p_period_month: string }
+        Returns: string
       }
       issue_refund: {
         Args: {
@@ -794,6 +988,10 @@ export type Database = {
           refund_id: string
           refund_receipt_number: string
         }[]
+      }
+      mark_payslip_paid: {
+        Args: { p_payment_method: string; p_payslip_id: string }
+        Returns: undefined
       }
       recompute_fee_schedule_status: {
         Args: { p_fee_schedule_id: string }
