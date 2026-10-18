@@ -11,6 +11,7 @@ import {
   CalendarRange,
   PenSquare,
   CheckSquare,
+  UserCheck,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   { label: "Exam Terms", to: "/admin/exam-terms", icon: CalendarRange, roles: ["principal"] },
   { label: "Marks Entry", to: "/admin/marks", icon: PenSquare, roles: ["teacher"] },
   { label: "Results Review", to: "/admin/results", icon: CheckSquare, roles: ["principal"] },
+  { label: "Parent Requests", to: "/admin/parent-requests", icon: UserCheck, roles: ["principal", "accountant"] },
 ];
 
 const AdminSidebarNav = () => {

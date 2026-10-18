@@ -14,6 +14,7 @@ import PayrollPage from "./features/payroll/PayrollPage";
 import ExamTermsPage from "./features/academics/ExamTermsPage";
 import MarkEntryPage from "./features/marks/MarkEntryPage";
 import ResultsReviewPage from "./features/results/ResultsReviewPage";
+import LinkRequestsQueue from "./features/parents/LinkRequestsQueue";
 
 const AdminApp = () => (
   <Routes>
@@ -36,6 +37,7 @@ const AdminApp = () => (
               <Route path="/exam-terms" element={<ExamTermsPage />} />
               <Route path="/marks" element={<MarkEntryPage />} />
               <Route path="/results" element={<ResultsReviewPage />} />
+              <Route path="/parent-requests" element={<LinkRequestsQueue />} />
             </Routes>
           </AdminShell>
         </RequireRole>

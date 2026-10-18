@@ -26,9 +26,11 @@ type LoginValues = z.infer<typeof loginSchema>;
 interface LoginFormProps {
   title: string;
   redirectTo: string;
+  /** Portal signups auto-get the 'parent' role; admin signups never do. */
+  signupSource?: "admin" | "portal";
 }
 
-export function LoginForm({ title, redirectTo }: LoginFormProps) {
+export function LoginForm({ title, redirectTo, signupSource = "admin" }: LoginFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const navigate = useNavigate();
@@ -42,7 +44,10 @@ export function LoginForm({ title, redirectTo }: LoginFormProps) {
     const supabase = getSupabaseClient();
 
     if (mode === "sign-up") {
-      const { data, error } = await supabase.auth.signUp(values);
+      const { data, error } = await supabase.auth.signUp({
+        ...values,
+        options: { data: { signup_source: signupSource } },
+      });
       setIsSubmitting(false);
       if (error) {
         toast.error(error.message);

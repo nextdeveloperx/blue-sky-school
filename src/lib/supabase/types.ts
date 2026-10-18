@@ -400,6 +400,93 @@ export type Database = {
           },
         ]
       }
+      parent_student_links: {
+        Row: {
+          id: string
+          parent_id: string
+          requested_at: string
+          student_id: string
+          verification_method: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          id?: string
+          parent_id: string
+          requested_at?: string
+          student_id: string
+          verification_method?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          id?: string
+          parent_id?: string
+          requested_at?: string
+          student_id?: string
+          verification_method?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_student_links_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_student_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_student_links_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parents: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          phone: string | null
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parents_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_allocations: {
         Row: {
           allocated_amount_minor: number
@@ -1300,6 +1387,15 @@ export type Database = {
       current_staff_id: { Args: never; Returns: string }
       finalize_payroll_run: {
         Args: { p_payroll_run_id: string }
+        Returns: undefined
+      }
+      is_verified_parent_of: { Args: { p_student_id: string }; Returns: boolean }
+      request_student_link: {
+        Args: { p_admission_no: string; p_child_full_name: string }
+        Returns: undefined
+      }
+      review_link_request: {
+        Args: { p_decision: string; p_link_id: string }
         Returns: undefined
       }
       generate_monthly_fee_schedules: {

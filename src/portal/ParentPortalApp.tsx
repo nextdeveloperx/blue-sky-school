@@ -3,6 +3,7 @@ import { RequireRole } from "@/lib/auth/RequireRole";
 import PortalShell from "./layout/PortalShell";
 import PortalDashboardPage from "./features/dashboard/PortalDashboardPage";
 import PortalLoginPage from "./auth/PortalLoginPage";
+import LinkRequestPage from "./features/children/LinkRequestPage";
 
 const ParentPortalApp = () => (
   <Routes>
@@ -14,6 +15,7 @@ const ParentPortalApp = () => (
           <PortalShell>
             <Routes>
               <Route path="/" element={<PortalDashboardPage />} />
+              <Route path="/link-child" element={<LinkRequestPage />} />
             </Routes>
           </PortalShell>
         </RequireRole>
