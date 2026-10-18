@@ -1,0 +1,242 @@
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { getSupabaseClient } from "@/lib/supabase/client";
+
+const studentSchema = z.object({
+  admission_no: z.string().min(1, "Admission number is required"),
+  full_name: z.string().min(1, "Name is required"),
+  dob: z.string().optional(),
+  gender: z.string().optional(),
+  section_id: z.string().min(1, "Section is required"),
+  guardian_name: z.string().optional(),
+  guardian_phone: z.string().optional(),
+});
+
+type StudentValues = z.infer<typeof studentSchema>;
+
+export default function AddStudentDialog({ academicYearId }: { academicYearId: string }) {
+  const supabase = getSupabaseClient();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const { data: sections } = useQuery({
+    queryKey: ["sections_with_class", academicYearId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sections")
+        .select("id, name, classes!inner(name, academic_year_id)")
+        .eq("classes.academic_year_id", academicYearId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const form = useForm<StudentValues>({
+    resolver: zodResolver(studentSchema),
+    defaultValues: {
+      admission_no: "",
+      full_name: "",
+      dob: "",
+      gender: "",
+      section_id: "",
+      guardian_name: "",
+      guardian_phone: "",
+    },
+  });
+
+  async function onSubmit(values: StudentValues) {
+    const { data: student, error } = await supabase
+      .from("students")
+      .insert({
+        admission_no: values.admission_no,
+        full_name: values.full_name,
+        dob: values.dob || null,
+        gender: values.gender || null,
+        academic_year_id: academicYearId,
+        current_section_id: values.section_id,
+        admission_date: new Date().toISOString().slice(0, 10),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    if (values.guardian_name) {
+      const { data: guardian, error: guardianError } = await supabase
+        .from("guardians")
+        .insert({ full_name: values.guardian_name, phone: values.guardian_phone || null })
+        .select()
+        .single();
+
+      if (guardianError) {
+        toast.error(`Student saved, but guardian failed: ${guardianError.message}`);
+      } else {
+        await supabase
+          .from("student_guardians")
+          .insert({ student_id: student.id, guardian_id: guardian.id, is_primary: true });
+      }
+    }
+
+    toast.success("Student admitted");
+    setOpen(false);
+    form.reset();
+    queryClient.invalidateQueries({ queryKey: ["students"] });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add student</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Admit student</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="admission_no"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Admission number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="full_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of birth</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="section_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Section</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a section" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sections?.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {(s.classes as unknown as { name: string }).name} - {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="guardian_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Guardian name (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="guardian_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Guardian phone</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Saving…" : "Admit student"}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

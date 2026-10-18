@@ -3,6 +3,8 @@ import { RequireRole } from "@/lib/auth/RequireRole";
 import AdminShell from "./layout/AdminShell";
 import DashboardPage from "./features/dashboard/DashboardPage";
 import AdminLoginPage from "./auth/AdminLoginPage";
+import AcademicSetupPage from "./features/academics/AcademicSetupPage";
+import StudentsPage from "./features/students/StudentsPage";
 
 const AdminApp = () => (
   <Routes>
@@ -14,6 +16,8 @@ const AdminApp = () => (
           <AdminShell>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/academics" element={<AcademicSetupPage />} />
+              <Route path="/students" element={<StudentsPage />} />
             </Routes>
           </AdminShell>
         </RequireRole>

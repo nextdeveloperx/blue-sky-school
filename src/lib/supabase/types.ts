@@ -74,6 +74,33 @@ export type Database = {
           },
         ]
       }
+      guardians: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          relation: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          relation?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          relation?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -174,6 +201,141 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_guardians: {
+        Row: {
+          created_at: string
+          guardian_id: string
+          id: string
+          is_primary: boolean
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          guardian_id: string
+          id?: string
+          is_primary?: boolean
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          guardian_id?: string
+          id?: string
+          is_primary?: boolean
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_guardians_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_guardians_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_section_history: {
+        Row: {
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          section_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          section_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          section_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_section_history_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_section_history_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          academic_year_id: string
+          admission_date: string | null
+          admission_no: string
+          created_at: string
+          current_section_id: string
+          dob: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          academic_year_id: string
+          admission_date?: string | null
+          admission_no: string
+          created_at?: string
+          current_section_id: string
+          dob?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          academic_year_id?: string
+          admission_date?: string | null
+          admission_no?: string
+          created_at?: string
+          current_section_id?: string
+          dob?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_current_section_id_fkey"
+            columns: ["current_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
         ]
