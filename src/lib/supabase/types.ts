@@ -74,6 +74,93 @@ export type Database = {
           },
         ]
       }
+      fee_schedules: {
+        Row: {
+          amount_due_minor: number
+          created_at: string
+          fee_structure_id: string
+          id: string
+          period_month: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          amount_due_minor: number
+          created_at?: string
+          fee_structure_id: string
+          id?: string
+          period_month: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          amount_due_minor?: number
+          created_at?: string
+          fee_structure_id?: string
+          id?: string
+          period_month?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_schedules_fee_structure_id_fkey"
+            columns: ["fee_structure_id"]
+            isOneToOne: false
+            referencedRelation: "fee_structures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_schedules_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_structures: {
+        Row: {
+          academic_year_id: string
+          amount_minor: number
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          academic_year_id: string
+          amount_minor: number
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          academic_year_id?: string
+          amount_minor?: number
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_structures_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guardians: {
         Row: {
           created_at: string
@@ -101,6 +188,102 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocations: {
+        Row: {
+          allocated_amount_minor: number
+          created_at: string
+          fee_schedule_id: string
+          id: string
+          payment_id: string
+        }
+        Insert: {
+          allocated_amount_minor: number
+          created_at?: string
+          fee_schedule_id: string
+          id?: string
+          payment_id: string
+        }
+        Update: {
+          allocated_amount_minor?: number
+          created_at?: string
+          fee_schedule_id?: string
+          id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_fee_schedule_id_fkey"
+            columns: ["fee_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "fee_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          is_refund: boolean
+          method: string
+          receipt_number: string
+          received_at: string
+          received_by: string
+          reference_note: string | null
+          student_id: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          is_refund?: boolean
+          method: string
+          receipt_number: string
+          received_at?: string
+          received_by: string
+          reference_note?: string | null
+          student_id: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          is_refund?: boolean
+          method?: string
+          receipt_number?: string
+          received_at?: string
+          received_by?: string
+          reference_note?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -127,6 +310,94 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      refund_allocations: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          fee_schedule_id: string
+          id: string
+          refund_id: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          fee_schedule_id: string
+          id?: string
+          refund_id: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          fee_schedule_id?: string
+          id?: string
+          refund_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_allocations_fee_schedule_id_fkey"
+            columns: ["fee_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "fee_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_allocations_refund_id_fkey"
+            columns: ["refund_id"]
+            isOneToOne: false
+            referencedRelation: "refunds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refunds: {
+        Row: {
+          created_at: string
+          id: string
+          original_payment_id: string
+          processed_by: string
+          reason: string
+          refund_payment_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_payment_id: string
+          processed_by: string
+          reason: string
+          refund_payment_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_payment_id?: string
+          processed_by?: string
+          reason?: string
+          refund_payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_original_payment_id_fkey"
+            columns: ["original_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_refund_payment_id_fkey"
+            columns: ["refund_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {
@@ -509,6 +780,39 @@ export type Database = {
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }
       current_staff_id: { Args: never; Returns: string }
+      generate_monthly_fee_schedules: {
+        Args: { p_academic_year_id: string; p_period_month: string }
+        Returns: number
+      }
+      issue_refund: {
+        Args: {
+          p_idempotency_key: string
+          p_payment_id: string
+          p_reason: string
+        }
+        Returns: {
+          refund_id: string
+          refund_receipt_number: string
+        }[]
+      }
+      recompute_fee_schedule_status: {
+        Args: { p_fee_schedule_id: string }
+        Returns: undefined
+      }
+      record_payment: {
+        Args: {
+          p_allocations: Json
+          p_amount_minor: number
+          p_idempotency_key: string
+          p_method: string
+          p_reference_note: string
+          p_student_id: string
+        }
+        Returns: {
+          payment_id: string
+          receipt_number: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

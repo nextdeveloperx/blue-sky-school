@@ -1,4 +1,13 @@
-import { LayoutDashboard, GraduationCap, Users, UserCog, Link2, ClipboardList } from "lucide-react";
+import {
+  LayoutDashboard,
+  GraduationCap,
+  Users,
+  UserCog,
+  Link2,
+  ClipboardList,
+  Wallet,
+  Receipt,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   SidebarGroup,
@@ -23,6 +32,8 @@ const navItems: NavItem[] = [
   { label: "Staff & Roles", to: "/admin/staff", icon: UserCog, roles: ["principal"] },
   { label: "Teacher Assignments", to: "/admin/assignments", icon: Link2, roles: ["principal"] },
   { label: "My Roster", to: "/admin/my-roster", icon: ClipboardList, roles: ["teacher"] },
+  { label: "Fees", to: "/admin/fees", icon: Wallet, roles: ["principal", "accountant"] },
+  { label: "Payments", to: "/admin/payments", icon: Receipt, roles: ["principal", "accountant"] },
 ];
 
 const AdminSidebarNav = () => {
