@@ -8,6 +8,8 @@ import {
   Wallet,
   Receipt,
   Banknote,
+  CalendarRange,
+  PenSquare,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -36,6 +38,8 @@ const navItems: NavItem[] = [
   { label: "Fees", to: "/admin/fees", icon: Wallet, roles: ["principal", "accountant"] },
   { label: "Payments", to: "/admin/payments", icon: Receipt, roles: ["principal", "accountant"] },
   { label: "Payroll", to: "/admin/payroll", icon: Banknote, roles: ["principal", "accountant"] },
+  { label: "Exam Terms", to: "/admin/exam-terms", icon: CalendarRange, roles: ["principal"] },
+  { label: "Marks Entry", to: "/admin/marks", icon: PenSquare, roles: ["teacher"] },
 ];
 
 const AdminSidebarNav = () => {

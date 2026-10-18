@@ -74,6 +74,41 @@ export type Database = {
           },
         ]
       }
+      exam_terms: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number | null
+          status: string
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number | null
+          status?: string
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_terms_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_schedules: {
         Row: {
           amount_due_minor: number
@@ -161,6 +196,44 @@ export type Database = {
           },
         ]
       }
+      grade_scale: {
+        Row: {
+          academic_year_id: string
+          created_at: string
+          grade_label: string
+          id: string
+          max_percent: number
+          min_percent: number
+          remark: string | null
+        }
+        Insert: {
+          academic_year_id: string
+          created_at?: string
+          grade_label: string
+          id?: string
+          max_percent: number
+          min_percent: number
+          remark?: string | null
+        }
+        Update: {
+          academic_year_id?: string
+          created_at?: string
+          grade_label?: string
+          id?: string
+          max_percent?: number
+          min_percent?: number
+          remark?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_scale_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guardians: {
         Row: {
           created_at: string
@@ -187,6 +260,145 @@ export type Database = {
           relation?: string | null
         }
         Relationships: []
+      }
+      marks: {
+        Row: {
+          entered_at: string
+          entered_by: string
+          exam_term_id: string
+          id: string
+          max_score: number
+          raw_score: number
+          section_id: string
+          student_id: string
+          subject_id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          entered_at?: string
+          entered_by: string
+          exam_term_id: string
+          id?: string
+          max_score: number
+          raw_score: number
+          section_id: string
+          student_id: string
+          subject_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          entered_at?: string
+          entered_by?: string
+          exam_term_id?: string
+          id?: string
+          max_score?: number
+          raw_score?: number
+          section_id?: string
+          student_id?: string
+          subject_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_exam_term_id_fkey"
+            columns: ["exam_term_id"]
+            isOneToOne: false
+            referencedRelation: "exam_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marks_audit: {
+        Row: {
+          change_type: string
+          changed_at: string
+          changed_by: string
+          exam_term_id: string
+          id: string
+          mark_id: string
+          max_score: number
+          raw_score: number
+          student_id: string
+          subject_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_at?: string
+          changed_by: string
+          exam_term_id: string
+          id?: string
+          mark_id: string
+          max_score: number
+          raw_score: number
+          student_id: string
+          subject_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_at?: string
+          changed_by?: string
+          exam_term_id?: string
+          id?: string
+          mark_id?: string
+          max_score?: number
+          raw_score?: number
+          student_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_audit_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_audit_mark_id_fkey"
+            columns: ["mark_id"]
+            isOneToOne: false
+            referencedRelation: "marks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_allocations: {
         Row: {
