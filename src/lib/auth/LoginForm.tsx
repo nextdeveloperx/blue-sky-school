@@ -15,6 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { resolveRoleRedirect } from "@/lib/auth/resolveRoleRedirect";
+import type { AppRole } from "@/lib/auth/useSession";
+import logo from "@/assets/blue-sky-school-logo.jpg";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -23,16 +26,17 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-interface LoginFormProps {
-  title: string;
-  redirectTo: string;
-  /** Portal signups auto-get the 'parent' role; admin signups never do. */
-  signupSource?: "admin" | "portal";
-}
-
-export function LoginForm({ title, redirectTo, signupSource = "admin" }: LoginFormProps) {
+/**
+ * The one sign-in form for every account type (principal, accountant,
+ * teacher, parent). There is deliberately no role selector here — after
+ * Supabase Auth confirms the password, the redirect is decided entirely by
+ * querying `user_roles` (RLS-scoped to the signed-in user's own rows), never
+ * by anything the client supplies. An account with no role row is shown a
+ * safe "no access" state with a sign-out path, not redirected anywhere.
+ */
+export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [unauthorized, setUnauthorized] = useState(false);
   const navigate = useNavigate();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -43,38 +47,70 @@ export function LoginForm({ title, redirectTo, signupSource = "admin" }: LoginFo
     setIsSubmitting(true);
     const supabase = getSupabaseClient();
 
-    if (mode === "sign-up") {
-      const { data, error } = await supabase.auth.signUp({
-        ...values,
-        options: { data: { signup_source: signupSource } },
-      });
-      setIsSubmitting(false);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      if (!data.session) {
-        toast.success("Account created. Check your email to confirm, then sign in.");
-        setMode("sign-in");
-        return;
-      }
-      navigate(redirectTo, { replace: true });
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword(values);
-    setIsSubmitting(false);
-
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
     if (error) {
+      setIsSubmitting(false);
       toast.error(error.message);
       return;
     }
+
+    const { data: roleRows, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+    setIsSubmitting(false);
+
+    if (roleError) {
+      toast.error(roleError.message);
+      return;
+    }
+
+    const roles = (roleRows ?? []).map((r) => r.role as AppRole);
+    const redirectTo = resolveRoleRedirect(roles);
+
+    if (!redirectTo) {
+      setUnauthorized(true);
+      return;
+    }
+
     navigate(redirectTo, { replace: true });
+  }
+
+  async function signOut() {
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
+    setUnauthorized(false);
+    form.reset();
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="max-w-sm w-full mx-auto space-y-4 text-center">
+        <h1 className="font-heading font-bold text-xl text-foreground">
+          No dashboard access yet
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Your account signed in successfully, but it isn't assigned to any school role yet.
+          Contact the school office if you believe this is a mistake.
+        </p>
+        <Button variant="outline" className="w-full" onClick={signOut}>
+          Sign out
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div className="max-w-sm w-full mx-auto space-y-6">
-      <h1 className="font-heading font-bold text-xl text-foreground text-center">{title}</h1>
+      <div className="flex flex-col items-center gap-2">
+        <img src={logo} alt="Blue Sky School crest" className="w-16 h-16 object-contain" />
+        <h1 className="font-heading font-bold text-xl text-foreground text-center">
+          Blue Sky School
+        </h1>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -97,34 +133,17 @@ export function LoginForm({ title, redirectTo, signupSource = "admin" }: LoginFo
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-                    {...field}
-                  />
+                  <Input type="password" autoComplete="current-password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting
-              ? mode === "sign-up"
-                ? "Creating account…"
-                : "Signing in…"
-              : mode === "sign-up"
-                ? "Create account"
-                : "Sign in"}
+            {isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>
       </Form>
-      <button
-        type="button"
-        className="text-sm text-muted-foreground hover:text-primary w-full text-center"
-        onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-      >
-        {mode === "sign-in" ? "Need an account? Create one" : "Already have an account? Sign in"}
-      </button>
     </div>
   );
 }

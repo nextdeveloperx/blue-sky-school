@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import logo from "@/assets/blue-sky-school-logo.jpg";
 
 const Footer = () => {
   return (
@@ -9,9 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-primary-foreground flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-secondary" />
-              </div>
+              <img src={logo} alt="Blue Sky School crest" className="w-10 h-10 object-contain" />
               <div className="flex flex-col">
                 <span className="font-heading font-bold text-lg leading-tight">
                   Blue Sky

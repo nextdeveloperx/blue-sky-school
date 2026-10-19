@@ -1,9 +1,7 @@
-import { LoginForm } from "@/lib/auth/LoginForm";
+import { Navigate } from "react-router-dom";
 
-const PortalLoginPage = () => (
-  <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-    <LoginForm title="Parent Portal" redirectTo="/portal" signupSource="portal" />
-  </div>
-);
+// Preserved for backward compatibility with any existing /portal/login
+// bookmark or link — the unified login experience now lives at /login.
+const PortalLoginPage = () => <Navigate to="/login" replace />;
 
 export default PortalLoginPage;

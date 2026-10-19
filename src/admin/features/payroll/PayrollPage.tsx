@@ -40,6 +40,7 @@ export default function PayrollPage() {
   const [adjKind, setAdjKind] = useState<AdjustmentKind>("deduction");
   const [adjAmount, setAdjAmount] = useState("");
   const [adjReason, setAdjReason] = useState("");
+  const [isAddingAdjustment, setIsAddingAdjustment] = useState(false);
 
   const { data: staffList } = useQuery({
     queryKey: ["staff_with_profiles"],
@@ -132,25 +133,34 @@ export default function PayrollPage() {
   }
 
   async function addAdjustment() {
+    if (isAddingAdjustment) return;
     if (!selectedRunId || !adjStaffId || !adjAmount || !adjReason) {
       toast.error("Select staff, amount, and a reason");
       return;
     }
-    const { error } = await supabase.rpc("add_salary_adjustment", {
-      p_payroll_run_id: selectedRunId,
-      p_staff_id: adjStaffId,
-      p_kind: adjKind,
-      p_amount_minor: rupeesToMinor(adjAmount),
-      p_reason: adjReason,
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
+
+    setIsAddingAdjustment(true);
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const { error } = await supabase.rpc("add_salary_adjustment", {
+        p_payroll_run_id: selectedRunId,
+        p_staff_id: adjStaffId,
+        p_kind: adjKind,
+        p_amount_minor: rupeesToMinor(adjAmount),
+        p_reason: adjReason,
+        p_idempotency_key: idempotencyKey,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Adjustment added");
+      setAdjAmount("");
+      setAdjReason("");
+      queryClient.invalidateQueries({ queryKey: ["payslips", selectedRunId] });
+    } finally {
+      setIsAddingAdjustment(false);
     }
-    toast.success("Adjustment added");
-    setAdjAmount("");
-    setAdjReason("");
-    queryClient.invalidateQueries({ queryKey: ["payslips", selectedRunId] });
   }
 
   async function finalizeRun() {
@@ -292,8 +302,8 @@ export default function PayrollPage() {
                   value={adjReason}
                   onChange={(e) => setAdjReason(e.target.value)}
                 />
-                <Button variant="outline" onClick={addAdjustment}>
-                  Add adjustment
+                <Button variant="outline" onClick={addAdjustment} disabled={isAddingAdjustment}>
+                  {isAddingAdjustment ? "Adding…" : "Add adjustment"}
                 </Button>
               </div>
             )}

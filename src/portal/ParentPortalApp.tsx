@@ -11,7 +11,7 @@ const ParentPortalApp = () => (
     <Route
       path="/*"
       element={
-        <RequireRole roles={["parent"]} loginPath="/portal/login">
+        <RequireRole roles={["parent"]} loginPath="/login">
           <PortalShell>
             <Routes>
               <Route path="/" element={<PortalDashboardPage />} />

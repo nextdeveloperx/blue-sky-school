@@ -1,137 +1,213 @@
-import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
-interface TrailPoint {
+interface Point {
   x: number;
   y: number;
-  id: number;
+}
+
+// A chain of nodes: the head eases toward the raw cursor position, and each
+// trailing node eases toward the node ahead of it. While the pointer moves,
+// this naturally stretches (trailing nodes lag proportionally to speed).
+// When the pointer stops, the head stops moving and each node in turn
+// catches up to the one ahead — the whole chain smoothly collapses onto a
+// single point near the cursor instead of freezing as a stretched line.
+const NODE_COUNT = 7;
+const HEAD_EASE = 0.22;
+const CHAIN_EASE = 0.32;
+const SETTLE_EPSILON = 0.4; // px of remaining movement below which the chain is considered fully settled
+const RADII = [4, 3.4, 2.8, 2.3, 1.8, 1.4, 1.1];
+
+function matchesDesktopPointer() {
+  return (
+    window.innerWidth >= 1024 &&
+    !("ontouchstart" in window) &&
+    window.matchMedia("(pointer: fine)").matches
+  );
+}
+
+function matchesReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 const CursorTrailLine = () => {
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [trail, setTrail] = useState<TrailPoint[]>([]);
-  const pointIdRef = useRef(0);
-  
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
+  const [enabled, setEnabled] = useState(false);
 
-  // Elastic spring config for smooth trailing
-  const springConfig = { damping: 20, stiffness: 300, mass: 0.5 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pathRef = useRef<SVGPathElement>(null);
+  const glowRef = useRef<SVGCircleElement>(null);
+  const dotRefs = useRef<(SVGCircleElement | null)[]>([]);
 
+  // Checks whether this effect should run at all — recomputed on resize and
+  // on a live prefers-reduced-motion change, same as the original component.
   useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 1024 && !("ontouchstart" in window));
+    const update = () => setEnabled(matchesDesktopPointer() && !matchesReducedMotion());
+    update();
+
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    window.addEventListener("resize", update);
+    reducedMotionQuery.addEventListener("change", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      reducedMotionQuery.removeEventListener("change", update);
     };
-
-    checkDesktop();
-    window.addEventListener("resize", checkDesktop);
-
-    return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
   useEffect(() => {
-    if (!isDesktop) return;
+    if (!enabled) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      cursorX.set(e.clientX);
-      cursorY.set(e.clientY);
-      
-      // Add new point to trail
-      const newPoint: TrailPoint = {
-        x: e.clientX,
-        y: e.clientY,
-        id: pointIdRef.current++,
-      };
-      
-      setTrail(prev => {
-        const newTrail = [...prev, newPoint];
-        // Keep only last 20 points for performance
-        return newTrail.slice(-20);
+    const target: Point = { x: -100, y: -100 };
+    const nodes: Point[] = Array.from({ length: NODE_COUNT }, () => ({ x: -100, y: -100 }));
+    let rafId: number | null = null;
+
+    function render() {
+      if (pathRef.current) {
+        let d = `M ${nodes[0].x.toFixed(1)} ${nodes[0].y.toFixed(1)}`;
+        for (let i = 1; i < nodes.length; i++) {
+          d += ` L ${nodes[i].x.toFixed(1)} ${nodes[i].y.toFixed(1)}`;
+        }
+        pathRef.current.setAttribute("d", d);
+      }
+      dotRefs.current.forEach((el, i) => {
+        el?.setAttribute("cx", nodes[i].x.toFixed(1));
+        el?.setAttribute("cy", nodes[i].y.toFixed(1));
       });
+      if (glowRef.current) {
+        glowRef.current.setAttribute("cx", nodes[0].x.toFixed(1));
+        glowRef.current.setAttribute("cy", nodes[0].y.toFixed(1));
+      }
+    }
+
+    function tick() {
+      let maxDelta = 0;
+
+      const head = nodes[0];
+      const dx0 = target.x - head.x;
+      const dy0 = target.y - head.y;
+      head.x += dx0 * HEAD_EASE;
+      head.y += dy0 * HEAD_EASE;
+      maxDelta = Math.max(maxDelta, Math.abs(dx0), Math.abs(dy0));
+
+      for (let i = 1; i < nodes.length; i++) {
+        const prev = nodes[i - 1];
+        const node = nodes[i];
+        const dx = prev.x - node.x;
+        const dy = prev.y - node.y;
+        node.x += dx * CHAIN_EASE;
+        node.y += dy * CHAIN_EASE;
+        maxDelta = Math.max(maxDelta, Math.abs(dx), Math.abs(dy));
+      }
+
+      render();
+
+      // Stop the loop once everything has converged — it restarts instantly
+      // on the next pointer move. Keeps this idle at 0 CPU rather than
+      // looping forever once the cursor is still.
+      if (maxDelta < SETTLE_EPSILON) {
+        rafId = null;
+        return;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function startLoop() {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function stopLoop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    function show() {
+      container.style.opacity = "1";
+    }
+
+    function hide() {
+      container.style.opacity = "0";
+    }
+
+    function handlePointerMove(e: PointerEvent) {
+      if (e.pointerType !== "mouse") return; // ignore touch/pen drags on hybrid devices
+      target.x = e.clientX;
+      target.y = e.clientY;
+      show();
+      startLoop();
+    }
+
+    function handleLeave() {
+      hide();
+    }
+
+    function handleEnter() {
+      show();
+    }
+
+    function handleBlur() {
+      hide();
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) stopLoop();
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("mouseleave", handleLeave);
+    document.addEventListener("mouseenter", handleEnter);
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("mouseleave", handleLeave);
+      document.removeEventListener("mouseenter", handleEnter);
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      stopLoop();
     };
+  }, [enabled]);
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isDesktop, cursorX, cursorY]);
-
-  // Cleanup old trail points
-  useEffect(() => {
-    if (!isDesktop || trail.length === 0) return;
-    
-    const cleanup = setInterval(() => {
-      setTrail(prev => prev.slice(-15));
-    }, 50);
-    
-    return () => clearInterval(cleanup);
-  }, [isDesktop, trail.length]);
-
-  if (!isDesktop) return null;
-
-  // Generate smooth path from trail points
-  const generatePath = () => {
-    if (trail.length < 2) return "";
-    
-    let path = `M ${trail[0].x} ${trail[0].y}`;
-    
-    for (let i = 1; i < trail.length; i++) {
-      const prev = trail[i - 1];
-      const curr = trail[i];
-      
-      // Use quadratic bezier for smooth curves
-      const midX = (prev.x + curr.x) / 2;
-      const midY = (prev.y + curr.y) / 2;
-      
-      path += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`;
-    }
-    
-    // Connect to current cursor position
-    if (trail.length > 0) {
-      const last = trail[trail.length - 1];
-      path += ` L ${last.x} ${last.y}`;
-    }
-    
-    return path;
-  };
+  if (!enabled) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300"
+      style={{ opacity: 1 }}
+    >
       <svg className="w-full h-full">
-        {/* Main trail line */}
-        <motion.path
-          d={generatePath()}
+        <path
+          ref={pathRef}
           fill="none"
           stroke="hsl(var(--cursor-trail))"
-          strokeWidth="2"
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.7 }}
-          style={{
-            filter: "drop-shadow(0 0 2px hsl(var(--cursor-trail) / 0.5))",
-          }}
+          opacity={0.7}
+          style={{ filter: "drop-shadow(0 0 2px hsl(var(--cursor-trail) / 0.5))" }}
         />
-        
-        {/* Leading dot at cursor position */}
-        <motion.circle
-          cx={cursorXSpring}
-          cy={cursorYSpring}
-          r="4"
-          fill="hsl(var(--cursor-trail))"
-          style={{
-            filter: "drop-shadow(0 0 4px hsl(var(--cursor-trail) / 0.6))",
-          }}
-        />
-        
-        {/* Subtle outer glow circle */}
-        <motion.circle
-          cx={cursorXSpring}
-          cy={cursorYSpring}
-          r="8"
+        {RADII.map((r, i) => (
+          <circle
+            key={i}
+            ref={(el) => {
+              dotRefs.current[i] = el;
+            }}
+            r={r}
+            fill="hsl(var(--cursor-trail))"
+            opacity={1 - i * 0.1}
+          />
+        ))}
+        <circle
+          ref={glowRef}
+          r={8}
           fill="none"
           stroke="hsl(var(--cursor-trail) / 0.3)"
-          strokeWidth="1"
+          strokeWidth={1}
         />
       </svg>
     </div>

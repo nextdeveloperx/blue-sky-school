@@ -31,6 +31,11 @@ export default function PaymentsPage() {
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [referenceNote, setReferenceNote] = useState("");
   const [allocationInputs, setAllocationInputs] = useState<Record<string, string>>({});
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  // Per-row, not a single flag — refunding one payment shouldn't block
+  // refunding a different one, but re-clicking the SAME row's button must
+  // be inert while that refund is still in flight.
+  const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
 
   const { data: students } = useQuery({
     queryKey: ["students_for_payment"],
@@ -83,6 +88,11 @@ export default function PaymentsPage() {
   }, [allocationInputs]);
 
   async function submitPayment() {
+    // Re-entrancy guard: belt-and-suspenders alongside the disabled button
+    // below — a stray double-invocation (e.g. a fast Enter-key repeat
+    // before re-render) is a no-op rather than a second request.
+    if (isSubmittingPayment) return;
+
     const allocations = Object.entries(allocationInputs)
       .map(([feeScheduleId, value]) => ({
         fee_schedule_id: feeScheduleId,
@@ -99,48 +109,62 @@ export default function PaymentsPage() {
       return;
     }
 
-    const idempotencyKey = crypto.randomUUID();
-    const { data, error } = await supabase.rpc("record_payment", {
-      p_student_id: studentId,
-      p_method: method,
-      p_amount_minor: totalAmountMinor,
-      p_allocations: allocations,
-      p_reference_note: referenceNote || null,
-      p_idempotency_key: idempotencyKey,
-    });
+    setIsSubmittingPayment(true);
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const { data, error } = await supabase.rpc("record_payment", {
+        p_student_id: studentId,
+        p_method: method,
+        p_amount_minor: totalAmountMinor,
+        p_allocations: allocations,
+        p_reference_note: referenceNote || null,
+        p_idempotency_key: idempotencyKey,
+      });
 
-    if (error) {
-      toast.error(error.message);
-      return;
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      const receipt = data?.[0]?.receipt_number;
+      toast.success(`Payment recorded — receipt ${receipt}`);
+      setAllocationInputs({});
+      setReferenceNote("");
+      queryClient.invalidateQueries({ queryKey: ["outstanding_fee_schedules", studentId] });
+      queryClient.invalidateQueries({ queryKey: ["payments_for_student", studentId] });
+    } finally {
+      // Always clears, on both the success path and every early return
+      // above that happens after the flag was set, and on a thrown error.
+      setIsSubmittingPayment(false);
     }
-
-    const receipt = data?.[0]?.receipt_number;
-    toast.success(`Payment recorded — receipt ${receipt}`);
-    setAllocationInputs({});
-    setReferenceNote("");
-    queryClient.invalidateQueries({ queryKey: ["outstanding_fee_schedules", studentId] });
-    queryClient.invalidateQueries({ queryKey: ["payments_for_student", studentId] });
   }
 
   async function refund(paymentId: string) {
+    if (refundingPaymentId) return;
+
     const reason = window.prompt("Reason for refund?");
     if (!reason) return;
 
-    const idempotencyKey = crypto.randomUUID();
-    const { data, error } = await supabase.rpc("issue_refund", {
-      p_payment_id: paymentId,
-      p_reason: reason,
-      p_idempotency_key: idempotencyKey,
-    });
+    setRefundingPaymentId(paymentId);
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const { data, error } = await supabase.rpc("issue_refund", {
+        p_payment_id: paymentId,
+        p_reason: reason,
+        p_idempotency_key: idempotencyKey,
+      });
 
-    if (error) {
-      toast.error(error.message);
-      return;
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success(`Refund issued — receipt ${data?.[0]?.refund_receipt_number}`);
+      queryClient.invalidateQueries({ queryKey: ["outstanding_fee_schedules", studentId] });
+      queryClient.invalidateQueries({ queryKey: ["payments_for_student", studentId] });
+    } finally {
+      setRefundingPaymentId(null);
     }
-
-    toast.success(`Refund issued — receipt ${data?.[0]?.refund_receipt_number}`);
-    queryClient.invalidateQueries({ queryKey: ["outstanding_fee_schedules", studentId] });
-    queryClient.invalidateQueries({ queryKey: ["payments_for_student", studentId] });
   }
 
   return (
@@ -224,8 +248,11 @@ export default function PaymentsPage() {
               <span className="text-sm text-muted-foreground">
                 Total: {formatMinor(totalAmountMinor)}
               </span>
-              <Button onClick={submitPayment} disabled={totalAmountMinor <= 0}>
-                Record payment
+              <Button
+                onClick={submitPayment}
+                disabled={totalAmountMinor <= 0 || isSubmittingPayment}
+              >
+                {isSubmittingPayment ? "Recording…" : "Record payment"}
               </Button>
             </div>
           </section>
@@ -253,8 +280,13 @@ export default function PaymentsPage() {
                     <TableCell>{new Date(p.received_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       {!p.is_refund && (
-                        <Button variant="outline" size="sm" onClick={() => refund(p.id)}>
-                          Refund
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => refund(p.id)}
+                          disabled={refundingPaymentId === p.id}
+                        >
+                          {refundingPaymentId === p.id ? "Refunding…" : "Refund"}
                         </Button>
                       )}
                     </TableCell>

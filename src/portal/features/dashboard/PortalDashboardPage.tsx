@@ -53,11 +53,25 @@ export default function PortalDashboardPage() {
     },
   });
 
+  const { data: payments } = useQuery({
+    queryKey: ["my_child_payments", activeStudentId],
+    enabled: !!activeStudentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("student_id", activeStudentId)
+        .order("received_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading font-bold text-2xl text-foreground">Parent Portal</h1>
+          <h1 className="font-heading font-bold text-2xl text-foreground">Family Dashboard</h1>
           <p className="text-muted-foreground">Your linked children.</p>
         </div>
         <Button asChild variant="outline">
@@ -100,7 +114,7 @@ export default function PortalDashboardPage() {
       </div>
 
       {activeStudentId && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <section className="space-y-2">
             <h2 className="font-heading font-semibold text-lg">Results</h2>
             {results?.length === 0 && (
@@ -128,6 +142,30 @@ export default function PortalDashboardPage() {
                 <span className="text-sm text-muted-foreground">
                   {formatMinor(d.amount_due_minor)} ({d.status})
                 </span>
+              </div>
+            ))}
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="font-heading font-semibold text-lg">Payment History</h2>
+            <p className="text-muted-foreground text-xs">
+              Recorded manually by the school office (cash, UPI, or bank transfer) — there is
+              no online payment here.
+            </p>
+            {payments?.length === 0 && (
+              <p className="text-muted-foreground text-sm">No payments recorded yet.</p>
+            )}
+            {payments?.map((p) => (
+              <div key={p.id} className="card-elevated p-3 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">
+                    {p.is_refund ? "Refund" : "Payment"} · {p.receipt_number}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(p.received_at).toLocaleDateString()} · {p.method.replace("_", " ")}
+                  </div>
+                </div>
+                <span className="text-sm font-medium">{formatMinor(p.amount_minor)}</span>
               </div>
             ))}
           </section>

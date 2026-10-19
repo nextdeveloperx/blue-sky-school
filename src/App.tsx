@@ -13,6 +13,8 @@ import Admissions from "./pages/Admissions";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/LoginPage";
+import RegisterParentPage from "./pages/RegisterParentPage";
 
 // Lazy-loaded so the private admin app and parent portal (and their
 // Supabase/table dependencies) never ship in the public marketing site's bundle.
@@ -52,6 +54,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterParentPage />} />
           <Route
             path="/admin/*"
             element={

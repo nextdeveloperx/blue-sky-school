@@ -533,6 +533,47 @@ export type Database = {
           },
         ]
       }
+      staff_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          designation: string | null
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          designation?: string | null
+          email: string
+          id?: string
+          invited_by: string
+          role: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          designation?: string | null
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_student_links: {
         Row: {
           id: string
@@ -1041,6 +1082,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          idempotency_key: string | null
           kind: string
           payroll_run_id: string
           reason: string
@@ -1051,6 +1093,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          idempotency_key?: string | null
           kind: string
           payroll_run_id: string
           reason: string
@@ -1061,6 +1104,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          idempotency_key?: string | null
           kind?: string
           payroll_run_id?: string
           reason?: string
@@ -1503,6 +1547,7 @@ export type Database = {
       add_salary_adjustment: {
         Args: {
           p_amount_minor: number
+          p_idempotency_key: string
           p_kind: string
           p_payroll_run_id: string
           p_reason: string
@@ -1513,6 +1558,22 @@ export type Database = {
       approve_results: { Args: { p_result_ids: string[] }; Returns: number }
       assign_role: {
         Args: { new_role: string; target_user_id: string }
+        Returns: undefined
+      }
+      revoke_role: {
+        Args: { p_role: string; p_user_id: string }
+        Returns: undefined
+      }
+      invite_staff: {
+        Args: { p_designation?: string; p_email: string; p_role: string }
+        Returns: string
+      }
+      revoke_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
+      revoke_parent_link: {
+        Args: { p_link_id: string }
         Returns: undefined
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }

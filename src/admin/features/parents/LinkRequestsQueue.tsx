@@ -40,6 +40,16 @@ export default function LinkRequestsQueue() {
     queryClient.invalidateQueries({ queryKey: ["parent_link_requests"] });
   }
 
+  async function revokeLink(linkId: string) {
+    const { error } = await supabase.rpc("revoke_parent_link", { p_link_id: linkId });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Link revoked");
+    queryClient.invalidateQueries({ queryKey: ["parent_link_requests"] });
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -89,6 +99,11 @@ export default function LinkRequestsQueue() {
                         Reject
                       </Button>
                     </div>
+                  )}
+                  {r.verification_status === "verified" && (
+                    <Button size="sm" variant="outline" onClick={() => revokeLink(r.id)}>
+                      Revoke
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>

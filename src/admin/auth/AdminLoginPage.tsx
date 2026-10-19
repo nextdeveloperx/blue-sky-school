@@ -1,9 +1,7 @@
-import { LoginForm } from "@/lib/auth/LoginForm";
+import { Navigate } from "react-router-dom";
 
-const AdminLoginPage = () => (
-  <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-    <LoginForm title="School Management System" redirectTo="/admin" />
-  </div>
-);
+// Preserved for backward compatibility with any existing /admin/login
+// bookmark or link — the unified login experience now lives at /login.
+const AdminLoginPage = () => <Navigate to="/login" replace />;
 
 export default AdminLoginPage;

@@ -25,7 +25,7 @@ const AdminApp = () => (
     <Route
       path="/*"
       element={
-        <RequireRole roles={["principal", "accountant", "teacher"]} loginPath="/admin/login">
+        <RequireRole roles={["principal", "accountant", "teacher"]} loginPath="/login">
           <AdminShell>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
