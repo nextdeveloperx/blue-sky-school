@@ -15,6 +15,7 @@ import {
   Receipt as ReceiptIcon,
   Download,
   History,
+  MessageSquareText,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -47,6 +48,7 @@ const navItems: NavItem[] = [
   { label: "Marks Entry", to: "/admin/marks", icon: PenSquare, roles: ["teacher"] },
   { label: "Results Review", to: "/admin/results", icon: CheckSquare, roles: ["principal"] },
   { label: "Parent Requests", to: "/admin/parent-requests", icon: UserCheck, roles: ["principal", "accountant"] },
+  { label: "Admission Enquiries", to: "/admin/enquiries", icon: MessageSquareText, roles: ["principal", "accountant"] },
   { label: "Expenses", to: "/admin/expenses", icon: ReceiptIcon, roles: ["principal", "accountant"] },
   { label: "Exports", to: "/admin/exports", icon: Download, roles: ["principal", "accountant"] },
   { label: "Audit Log", to: "/admin/audit-log", icon: History, roles: ["principal"] },

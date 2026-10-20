@@ -46,6 +46,22 @@ for the user-facing structure.
   of them. Both also now check `profiles.is_active`. If you need to change
   what "has access" means system-wide, change these two functions, not each
   individual policy.
+- Supabase grants `SELECT` on every new `public` table to `anon`/
+  `authenticated` by default. If a table needs an RLS policy that calls a
+  function already revoked from `anon` (like the two helpers above), an
+  anon `SELECT` attempt fails with a *permission-denied-for-function* error
+  rather than silently returning zero rows — functionally equivalent (no
+  data leaks either way) but worth knowing when writing tests, and worth
+  adding an explicit `revoke all on table ... from anon;` anyway so the
+  boundary is declared in the table's own migration rather than depending
+  on this incidental interaction (see migration 30).
+- `admission_enquiries` is the first (and so far only) table with a
+  function granted to `anon` at all (`submit_admission_enquiry`) — every
+  other RPC in this schema is authenticated-only. If you add another
+  genuinely-public write path, follow that migration's pattern: no RLS
+  write policy for anyone, full validation + rate limiting inside the
+  function itself, and nothing in its signature that could ever set a
+  staff-only column.
 
 ## Roles and auth model
 

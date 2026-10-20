@@ -18,21 +18,36 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
 
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success("Thank you for your message! We'll get back to you soon.");
-    setFormData({ name: "", email: "", message: "" });
+
+    // This site has no backend inbox to receive form submissions — rather
+    // than fake a "message sent" confirmation, open the visitor's own email
+    // client with the message pre-filled, so it's genuinely sent by them.
+    //
+    // For real enquiry tracking (a record of who asked what, without relying
+    // on the visitor's own email client actually being configured — a mailto
+    // link silently does nothing if it isn't), this would need: a Supabase
+    // table (e.g. `enquiries`) + an insert-only RLS policy for anon/public
+    // submissions, a way for staff to view/triage them (an admin page, akin
+    // to the existing parent-link review queue), and ideally a notification
+    // path (e.g. a Supabase database webhook or Edge Function emailing the
+    // school on each new row). None of that exists today — explicitly out of
+    // scope for this pass, which is public-site-only.
+    const subject = encodeURIComponent(`Website enquiry from ${formData.name}`);
+    const body = encodeURIComponent(
+      `${formData.message}\n\n— ${formData.name} (${formData.email})`,
+    );
+    window.location.href = `mailto:blueskyschool0@gmail.com?subject=${subject}&body=${body}`;
+
+    toast.success("Opening your email app to send this message to us.");
     setIsSubmitting(false);
   };
 
@@ -120,19 +135,18 @@ const Contact = () => {
                 </div>
               </div>
 
-              {/* Google Map */}
-              <div className="rounded-xl overflow-hidden border border-border h-64">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.265588856342!2d73.91455931541671!3d18.562551287384868!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2c147b8b3a3bf%3A0x6f7fdcc8e4d6c77e!2sBlue%20Sky%20School!5e0!3m2!1sen!2sin!4v1635774123456!5m2!1sen!2sin"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Blue Sky School Location"
-                  className="w-full h-full"
-                />
+              {/* Map placeholder — the previous embed pinned a real but
+                  UNRELATED location (a commercial complex in Pune,
+                  verified by inspecting the resolved map), which actively
+                  misled visitors rather than just looking unfinished.
+                  Removed rather than replaced with another guess: wire in
+                  a real embed URL for the actual campus once the school
+                  confirms its address. */}
+              <div className="rounded-xl border border-dashed border-border h-64 flex flex-col items-center justify-center gap-2 text-center p-6 bg-muted/50">
+                <MapPin className="w-8 h-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Campus map coming soon. Confirm our school address above or by email.
+                </p>
               </div>
             </motion.div>
 
@@ -161,6 +175,8 @@ const Contact = () => {
                       className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       placeholder="Enter your name"
                       maxLength={100}
+                      required
+                      autoComplete="name"
                     />
                   </div>
                   <div>
@@ -176,6 +192,8 @@ const Contact = () => {
                       className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       placeholder="Enter your email"
                       maxLength={255}
+                      required
+                      autoComplete="email"
                     />
                   </div>
                   <div>
@@ -191,6 +209,7 @@ const Contact = () => {
                       className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-none"
                       placeholder="How can we help you?"
                       maxLength={1000}
+                      required
                     />
                   </div>
                   <button

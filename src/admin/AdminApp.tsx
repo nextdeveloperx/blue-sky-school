@@ -18,6 +18,7 @@ import LinkRequestsQueue from "./features/parents/LinkRequestsQueue";
 import ExpensesPage from "./features/expenses/ExpensesPage";
 import ExportsPage from "./features/exports/ExportsPage";
 import AuditLogPage from "./features/audit/AuditLogPage";
+import EnquiriesPage from "./features/enquiries/EnquiriesPage";
 
 const AdminApp = () => (
   <Routes>
@@ -41,6 +42,7 @@ const AdminApp = () => (
               <Route path="/marks" element={<MarkEntryPage />} />
               <Route path="/results" element={<ResultsReviewPage />} />
               <Route path="/parent-requests" element={<LinkRequestsQueue />} />
+              <Route path="/enquiries" element={<EnquiriesPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/exports" element={<ExportsPage />} />
               <Route path="/audit-log" element={<AuditLogPage />} />

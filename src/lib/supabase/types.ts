@@ -42,6 +42,74 @@ export type Database = {
         }
         Relationships: []
       }
+      admission_enquiries: {
+        Row: {
+          academic_session: string
+          applying_for_class: string
+          assigned_staff_id: string | null
+          consent: boolean
+          created_at: string
+          email: string | null
+          follow_up_date: string | null
+          id: string
+          idempotency_key: string
+          internal_notes: string | null
+          message: string | null
+          parent_name: string
+          phone: string
+          status: string
+          student_name: string | null
+          submitted_ip: string | null
+          updated_at: string
+        }
+        Insert: {
+          academic_session: string
+          applying_for_class: string
+          assigned_staff_id?: string | null
+          consent: boolean
+          created_at?: string
+          email?: string | null
+          follow_up_date?: string | null
+          id?: string
+          idempotency_key: string
+          internal_notes?: string | null
+          message?: string | null
+          parent_name: string
+          phone: string
+          status?: string
+          student_name?: string | null
+          submitted_ip?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academic_session?: string
+          applying_for_class?: string
+          assigned_staff_id?: string | null
+          consent?: boolean
+          created_at?: string
+          email?: string | null
+          follow_up_date?: string | null
+          id?: string
+          idempotency_key?: string
+          internal_notes?: string | null
+          message?: string | null
+          parent_name?: string
+          phone?: string
+          status?: string
+          student_name?: string | null
+          submitted_ip?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_enquiries_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1574,6 +1642,32 @@ export type Database = {
       }
       revoke_parent_link: {
         Args: { p_link_id: string }
+        Returns: undefined
+      }
+      submit_admission_enquiry: {
+        Args: {
+          p_academic_session: string
+          p_applying_for_class: string
+          p_consent: boolean
+          p_email: string | null
+          p_honeypot?: string
+          p_idempotency_key: string
+          p_message: string | null
+          p_parent_name: string
+          p_phone: string
+          p_student_name: string | null
+        }
+        Returns: string
+      }
+      update_enquiry: {
+        Args: {
+          p_assigned_staff_id?: string | null
+          p_clear_assignment?: boolean
+          p_enquiry_id: string
+          p_follow_up_date?: string | null
+          p_internal_notes?: string | null
+          p_status?: string | null
+        }
         Returns: undefined
       }
       auth_has_role: { Args: { required_role: string }; Returns: boolean }

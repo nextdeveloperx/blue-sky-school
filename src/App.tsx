@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import Index from "./pages/Index";
@@ -15,6 +17,8 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import RegisterParentPage from "./pages/RegisterParentPage";
+import ResetPasswordRequestPage from "./pages/ResetPasswordRequestPage";
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 
 // Lazy-loaded so the private admin app and parent portal (and their
 // Supabase/table dependencies) never ship in the public marketing site's bundle.
@@ -24,21 +28,25 @@ const ParentPortalApp = lazy(() => import("./portal/ParentPortalApp"));
 const queryClient = new QueryClient();
 
 const PublicSite = () => (
-  <div className="min-h-screen flex flex-col">
-    <Navbar />
-    <div className="flex-1">
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/academics" element={<Academics />} />
-        <Route path="/admissions" element={<Admissions />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
-    <Footer />
-  </div>
+  <ThemeProvider>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <Navbar />
+        <div className="flex-1">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/academics" element={<Academics />} />
+            <Route path="/admissions" element={<Admissions />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+        <Footer />
+      </div>
+    </MotionConfig>
+  </ThemeProvider>
 );
 
 const PrivateAppFallback = () => (
@@ -56,6 +64,8 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterParentPage />} />
+          <Route path="/reset-password" element={<ResetPasswordRequestPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route
             path="/admin/*"
             element={

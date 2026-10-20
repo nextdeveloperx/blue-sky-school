@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +144,11 @@ export function LoginForm() {
           </Button>
         </form>
       </Form>
+      <p className="text-sm text-center">
+        <Link to="/reset-password" className="text-primary hover:underline font-medium">
+          Forgot password?
+        </Link>
+      </p>
     </div>
   );
 }

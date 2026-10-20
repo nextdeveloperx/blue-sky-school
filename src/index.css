@@ -50,23 +50,42 @@
   }
 
   .dark {
-    --background: 210 20% 98%;
-    --foreground: 200 18% 20%;
-    --card: 0 0% 100%;
-    --card-foreground: 200 18% 20%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 200 18% 20%;
-    --primary: 210 79% 51%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 214 85% 34%;
+    /* Blue Sky School - Dark Theme: cohesive dark navy/charcoal, same brand hues */
+    --background: 215 32% 10%;
+    --foreground: 210 30% 92%;
+
+    --card: 215 28% 14%;
+    --card-foreground: 210 30% 92%;
+
+    --popover: 215 28% 14%;
+    --popover-foreground: 210 30% 92%;
+
+    /* Sky Blue - Primary, brightened slightly for contrast on dark */
+    --primary: 210 85% 62%;
+    --primary-foreground: 215 32% 10%;
+
+    /* Deep Blue - Secondary */
+    --secondary: 214 70% 48%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 210 60% 98%;
-    --muted-foreground: 200 18% 40%;
-    --accent: 45 97% 58%;
-    --accent-foreground: 200 18% 18%;
-    --border: 210 30% 92%;
-    --input: 210 30% 92%;
-    --ring: 210 79% 51%;
+
+    --muted: 215 25% 18%;
+    --muted-foreground: 210 20% 68%;
+
+    /* Yellow Accent - kept warm and legible on dark */
+    --accent: 45 97% 62%;
+    --accent-foreground: 215 32% 12%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 22% 24%;
+    --input: 215 22% 24%;
+    --ring: 210 85% 62%;
+
+    --hero-gradient: linear-gradient(135deg, hsl(215 32% 10%) 0%, hsl(215 28% 14%) 100%);
+    --card-shadow: 0 4px 20px -4px hsl(0 0% 0% / 0.35);
+    --card-shadow-hover: 0 8px 30px -4px hsl(0 0% 0% / 0.5);
+    --text-gradient: linear-gradient(135deg, hsl(210 85% 62%) 0%, hsl(214 75% 58%) 100%);
   }
 }
 
@@ -82,6 +101,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -117,7 +137,7 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold px-6 py-3 transition-all duration-300;
+    @apply inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold px-6 py-3 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     font-family: 'Poppins', sans-serif;
   }
 
@@ -127,7 +147,7 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center rounded-lg border-2 border-primary text-primary font-semibold px-6 py-3 transition-all duration-300;
+    @apply inline-flex items-center justify-center rounded-lg border-2 border-primary text-primary font-semibold px-6 py-3 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     font-family: 'Poppins', sans-serif;
   }
 
@@ -136,7 +156,7 @@
   }
 
   .btn-accent {
-    @apply inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground font-semibold px-6 py-3 transition-all duration-300;
+    @apply inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground font-semibold px-6 py-3 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     font-family: 'Poppins', sans-serif;
   }
 
@@ -174,5 +194,16 @@
     to {
       opacity: 1;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GraduationCap, ArrowRight, BookOpen, Users, Shield } from "lucide-react";
 import CursorTrailLine from "./CursorFollowLine";
+import { CURRENT_ADMISSION_SESSION } from "@/lib/content/admissions";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-background">
+    <section className="relative flex items-center overflow-hidden bg-background pt-28 pb-12 lg:min-h-screen lg:py-0">
       {/* Cursor Trail Effect - Desktop Only */}
       <CursorTrailLine />
 
@@ -22,7 +23,7 @@ const HeroSection = () => {
         <div className="absolute top-1/2 left-20 w-2 h-2 bg-secondary rounded-full opacity-30" />
       </div>
 
-      <div className="section-container relative z-10 pt-24 pb-16">
+      <div className="section-container relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <div className="text-center lg:text-left">
@@ -34,7 +35,9 @@ const HeroSection = () => {
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-6"
             >
               <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-primary">Admissions Open 2025-26</span>
+              <span className="text-sm font-medium text-primary">
+                Admissions Open {CURRENT_ADMISSION_SESSION}
+              </span>
             </motion.div>
 
             {/* School Name */}
@@ -42,9 +45,9 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-foreground mb-4"
+              className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-foreground mb-4 leading-tight"
             >
-              Welcome to{" "}
+              Where Learning Takes Flight at{" "}
               <span className="text-gradient">Blue Sky School</span>
             </motion.h1>
 
@@ -65,8 +68,9 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8"
             >
-              Nurturing young minds with quality education, experienced teachers, and a safe, 
-              friendly environment. Join our community of lifelong learners.
+              From curious beginnings to confident futures — we blend quality academics,
+              experienced educators, and a safe, caring campus where every child is known
+              and valued.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -91,10 +95,17 @@ const HeroSection = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
-            className="grid gap-4"
+            className="relative grid gap-4"
           >
+            {/* Decorative gradient glow behind the card */}
+            <div
+              className="absolute -inset-4 rounded-[2rem] opacity-20 blur-2xl -z-10"
+              style={{ background: "var(--text-gradient)" }}
+              aria-hidden="true"
+            />
+
             {/* Main Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-border">
+            <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
                   <GraduationCap className="w-7 h-7 text-primary-foreground" />
@@ -124,6 +135,11 @@ const HeroSection = () => {
             </div>
 
             {/* Stats Row */}
+            {/* FLAG FOR SCHOOL REVIEW: these three figures are unverified —
+                they predate this review and there is no school record
+                (database or otherwise) in this codebase to confirm them
+                against. Not fabricated or changed here; confirm the real
+                counts with the school before treating them as accurate. */}
             <div className="grid grid-cols-3 gap-4">
               {[
                 { value: "500+", label: "Students" },
@@ -135,7 +151,7 @@ const HeroSection = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                  className="bg-white rounded-xl p-4 text-center shadow-md border border-border"
+                  className="bg-card rounded-xl p-4 text-center shadow-md border border-border"
                 >
                   <div className="font-heading font-bold text-2xl text-primary">{stat.value}</div>
                   <div className="text-sm text-muted-foreground">{stat.label}</div>

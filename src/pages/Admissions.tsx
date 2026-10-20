@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { FileText, UserCheck, CheckCircle, Mail, ArrowRight } from "lucide-react";
+import { CURRENT_ADMISSION_SESSION } from "@/lib/content/admissions";
+import { EnquiryForm } from "@/components/admissions/EnquiryForm";
 
 const steps = [
   {
@@ -45,7 +47,7 @@ const Admissions = () => {
           >
             <div className="inline-flex items-center gap-2 bg-accent/20 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
               <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-              Admissions Open for 2024-25
+              Admissions Open for {CURRENT_ADMISSION_SESSION}
             </div>
             <h1 className="font-heading font-bold text-4xl md:text-5xl text-foreground mb-4">
               Join <span className="text-gradient">Blue Sky School</span>
@@ -99,6 +101,37 @@ const Admissions = () => {
                 )}
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Admission Enquiry Form */}
+      <section className="section-padding">
+        <div className="section-container">
+          <div className="max-w-2xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-10"
+            >
+              <h2 className="font-heading font-bold text-3xl text-foreground mb-4">
+                Submit an <span className="text-gradient">Enquiry</span>
+              </h2>
+              <p className="text-muted-foreground">
+                Prefer not to call or email directly? Fill in the form below and our
+                admissions team will get in touch with you.
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <EnquiryForm />
+            </motion.div>
           </div>
         </div>
       </section>

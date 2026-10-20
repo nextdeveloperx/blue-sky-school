@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import { useSession, type AppRole } from "./useSession";
 
 interface RequireRoleProps {
@@ -17,6 +19,13 @@ interface RequireRoleProps {
  */
 export function RequireRole({ roles, loginPath, children }: RequireRoleProps) {
   const { session, roles: userRoles, loading } = useSession();
+  const navigate = useNavigate();
+
+  async function signOut() {
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
+    navigate(loginPath, { replace: true });
+  }
 
   if (loading) {
     return (
@@ -38,6 +47,9 @@ export function RequireRole({ roles, loginPath, children }: RequireRoleProps) {
         <p className="text-muted-foreground max-w-sm">
           Your account does not have permission to view this area.
         </p>
+        <Button variant="outline" onClick={signOut}>
+          Sign out
+        </Button>
       </div>
     );
   }
