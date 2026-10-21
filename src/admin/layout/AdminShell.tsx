@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { ThemeToggle } from "@/lib/theme/ThemeToggle";
 import AdminSidebarNav from "./AdminSidebarNav";
 
 const AdminShell = ({ children }: { children: ReactNode }) => {
@@ -44,12 +43,9 @@ const AdminShell = ({ children }: { children: ReactNode }) => {
               School Management System
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              Sign out
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            Sign out
+          </Button>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
