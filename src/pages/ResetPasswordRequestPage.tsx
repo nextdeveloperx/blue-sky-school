@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/lib/theme/ThemeToggle";
 
 const schema = z.object({ email: z.string().email("Enter a valid email address") });
 type Values = z.infer<typeof schema>;
@@ -42,7 +43,8 @@ export default function ResetPasswordRequestPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+    <div className="relative min-h-screen flex items-center justify-center p-6 bg-background">
+      <ThemeToggle className="absolute top-4 right-4" />
       <div className="max-w-sm w-full mx-auto space-y-6">
         <h1 className="font-heading font-bold text-xl text-foreground text-center">
           Reset your password

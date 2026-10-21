@@ -18,12 +18,14 @@ function readStoredTheme(): Theme {
 }
 
 /**
- * Scopes dark mode to the public marketing site only — the `dark` class is
- * applied to this provider's own wrapper element, not `<html>`, so it can
- * never bleed into the admin or family dashboards which live in separate
- * route subtrees outside it. This is a pure client-rendered SPA (no SSR),
- * so reading localStorage in the lazy useState initializer below runs
- * before first paint — no flash-of-wrong-theme script is needed.
+ * One shared light/dark preference for the entire app — public site, login/
+ * register/reset pages, admin dashboard, and family dashboard. The `dark`
+ * class is applied to this provider's own wrapper element (not `<html>`),
+ * which still works everywhere since this wraps the whole route tree. This
+ * is a pure client-rendered SPA (no SSR), so reading localStorage in the
+ * lazy useState initializer below runs before first paint — no
+ * flash-of-wrong-theme script is needed. Defaults to light for anyone with
+ * no stored preference yet, regardless of which route they land on first.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(readStoredTheme);
@@ -38,7 +40,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div className={theme === "dark" ? "dark" : undefined}>{children}</div>
+      <div className={`min-h-screen ${theme === "dark" ? "dark" : ""}`}>{children}</div>
     </ThemeContext.Provider>
   );
 }

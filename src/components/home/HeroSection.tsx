@@ -118,7 +118,7 @@ const HeroSection = () => {
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { icon: BookOpen, label: "Quality Education", color: "bg-primary/10 text-primary" },
-                  { icon: Users, label: "Expert Teachers", color: "bg-accent/20 text-accent-foreground" },
+                  { icon: Users, label: "Expert Teachers", color: "bg-accent/20 text-accent" },
                   { icon: Shield, label: "Safe Environment", color: "bg-secondary/10 text-secondary" },
                 ].map((item, index) => (
                   <div

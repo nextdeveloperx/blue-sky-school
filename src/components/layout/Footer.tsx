@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin } from "lucide-react";
-import logo from "@/assets/blue-sky-school-logo.jpg";
+import logo from "@/assets/blue-sky-school-logo.png";
 
 const Footer = () => {
   return (
     <footer className="bg-secondary text-secondary-foreground">
-      <div className="section-container py-12 md:py-16">
+      <div className="section-container py-10 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
@@ -81,7 +81,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-secondary-foreground/20 text-center text-sm text-secondary-foreground/60">
+        <div className="mt-8 pt-6 border-t border-secondary-foreground/20 text-center text-sm text-secondary-foreground/60">
           <p>© {new Date().getFullYear()} Blue Sky School. All rights reserved.</p>
         </div>
       </div>

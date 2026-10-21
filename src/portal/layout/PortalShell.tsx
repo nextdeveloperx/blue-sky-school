@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import logo from "@/assets/blue-sky-school-logo.jpg";
+import { ThemeToggle } from "@/lib/theme/ThemeToggle";
+import logo from "@/assets/blue-sky-school-logo.png";
 
 const PortalShell = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
@@ -20,9 +21,12 @@ const PortalShell = ({ children }: { children: ReactNode }) => {
           <img src={logo} alt="Blue Sky School crest" className="w-8 h-8 object-contain shrink-0" />
           <span className="font-heading font-semibold text-sm">Blue Sky Family Dashboard</span>
         </Link>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          Sign out
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            Sign out
+          </Button>
+        </div>
       </header>
       <main className="flex-1 p-6 max-w-3xl w-full mx-auto">{children}</main>
     </div>

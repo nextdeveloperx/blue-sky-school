@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/blue-sky-school-logo.jpg";
+import logo from "@/assets/blue-sky-school-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/lib/theme/ThemeToggle";
 import AdminSidebarNav from "./AdminSidebarNav";
 
 const AdminShell = ({ children }: { children: ReactNode }) => {
@@ -43,9 +44,12 @@ const AdminShell = ({ children }: { children: ReactNode }) => {
               School Management System
             </span>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>

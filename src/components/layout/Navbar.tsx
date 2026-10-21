@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "@/assets/blue-sky-school-logo.jpg";
+import logo from "@/assets/blue-sky-school-logo.png";
 import { ThemeToggle } from "@/lib/theme/ThemeToggle";
 
 const navLinks = [

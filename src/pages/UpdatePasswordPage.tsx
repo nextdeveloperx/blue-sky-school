@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/lib/theme/ThemeToggle";
 
 const schema = z.object({ password: z.string().min(6, "Password must be at least 6 characters") });
 type Values = z.infer<typeof schema>;
@@ -56,7 +57,8 @@ export default function UpdatePasswordPage() {
 
   if (hasSession === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+      <div className="relative min-h-screen flex items-center justify-center p-6 bg-background">
+        <ThemeToggle className="absolute top-4 right-4" />
         <div className="max-w-sm w-full mx-auto space-y-4 text-center">
           <h1 className="font-heading font-bold text-xl text-foreground">Link expired</h1>
           <p className="text-muted-foreground text-sm">
@@ -72,7 +74,8 @@ export default function UpdatePasswordPage() {
 
   if (updated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+      <div className="relative min-h-screen flex items-center justify-center p-6 bg-background">
+        <ThemeToggle className="absolute top-4 right-4" />
         <div className="max-w-sm w-full mx-auto space-y-4 text-center">
           <h1 className="font-heading font-bold text-xl text-foreground">Password updated</h1>
           <p className="text-muted-foreground text-sm">You can now sign in with your new password.</p>
@@ -85,7 +88,8 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+    <div className="relative min-h-screen flex items-center justify-center p-6 bg-background">
+      <ThemeToggle className="absolute top-4 right-4" />
       <div className="max-w-sm w-full mx-auto space-y-6">
         <h1 className="font-heading font-bold text-xl text-foreground text-center">
           Choose a new password

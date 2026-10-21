@@ -17,7 +17,7 @@ import {
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { resolveRoleRedirect } from "@/lib/auth/resolveRoleRedirect";
 import type { AppRole } from "@/lib/auth/useSession";
-import logo from "@/assets/blue-sky-school-logo.jpg";
+import logo from "@/assets/blue-sky-school-logo.png";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
