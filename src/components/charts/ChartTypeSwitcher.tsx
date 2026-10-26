@@ -164,7 +164,7 @@ export function ChartTypeSwitcher({
                 className={onElementClick ? "cursor-pointer" : undefined}
               >
                 {data.map((d, i) => (
-                  <Cell key={d.name} fill={colorFor(i)} />
+                  <Cell key={d.name} fill={colorFor(i)} style={{ fill: colorFor(i) }} />
                 ))}
               </Bar>
             </BarChart>
@@ -180,6 +180,7 @@ export function ChartTypeSwitcher({
                 type="monotone"
                 dataKey="value"
                 stroke="hsl(var(--chart-1))"
+                style={{ stroke: "hsl(var(--chart-1))" }}
                 strokeWidth={2}
                 dot={{
                   r: 4,
@@ -209,7 +210,7 @@ export function ChartTypeSwitcher({
                 className={onElementClick ? "cursor-pointer" : undefined}
               >
                 {data.map((d, i) => (
-                  <Cell key={d.name} fill={colorFor(i)} />
+                  <Cell key={d.name} fill={colorFor(i)} style={{ fill: colorFor(i) }} />
                 ))}
               </Pie>
               <ChartLegend content={<ChartLegendContent nameKey="name" />} />

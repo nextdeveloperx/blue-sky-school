@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/blue-sky-school-logo.png";
 import {
   Sidebar,
@@ -26,17 +26,22 @@ const AdminShell = ({ children }: { children: ReactNode }) => {
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center gap-2 px-2 py-1">
+          <Link
+            to="/admin"
+            className="flex items-center gap-2 px-2 py-1 overflow-hidden rounded-md hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <img src={logo} alt="Blue Sky School crest" className="w-8 h-8 object-contain shrink-0" />
-            <span className="font-heading font-semibold text-sm">Blue Sky Admin</span>
-          </div>
+            <span className="font-heading font-semibold text-sm truncate group-data-[collapsible=icon]:hidden">
+              Blue Sky Admin
+            </span>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
           <AdminSidebarNav />
         </SidebarContent>
       </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between gap-2 border-b border-border px-4 h-14">
+      <SidebarInset className="bg-[hsl(var(--admin-background))]">
+        <header className="flex items-center justify-between gap-2 border-b border-border bg-card px-4 h-14 shadow-sm">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <span className="font-heading font-semibold text-sm text-foreground">

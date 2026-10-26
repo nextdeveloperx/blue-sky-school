@@ -365,9 +365,26 @@ const DashboardPage = () => {
                   <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="paid" stackId="fee" fill="var(--color-paid)" radius={[0, 0, 4, 4]} />
-                  <Bar dataKey="partial" stackId="fee" fill="var(--color-partial)" />
-                  <Bar dataKey="pending" stackId="fee" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="paid"
+                    stackId="fee"
+                    fill="var(--color-paid)"
+                    style={{ fill: "var(--color-paid)" }}
+                    radius={[0, 0, 4, 4]}
+                  />
+                  <Bar
+                    dataKey="partial"
+                    stackId="fee"
+                    fill="var(--color-partial)"
+                    style={{ fill: "var(--color-partial)" }}
+                  />
+                  <Bar
+                    dataKey="pending"
+                    stackId="fee"
+                    fill="var(--color-pending)"
+                    style={{ fill: "var(--color-pending)" }}
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ChartContainer>
             )}
