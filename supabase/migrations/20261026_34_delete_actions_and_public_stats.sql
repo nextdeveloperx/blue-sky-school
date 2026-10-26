@@ -1,4 +1,4 @@
--- PREPARED FOR REVIEW — NOT APPLIED TO PRODUCTION.
+-- APPLIED TO PRODUCTION on 2026-10-27.
 --
 -- Additive schema + RPCs for three features in the "complete feature
 -- enhancement plan": Fees archive, Staff account deactivation (made real,
