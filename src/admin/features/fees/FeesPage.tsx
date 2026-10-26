@@ -21,6 +21,33 @@ import {
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { rupeesToMinor, formatMinor } from "@/lib/finance/money";
 import { InfoHelp } from "@/components/InfoHelp";
+import { StatusBadge } from "@/components/StatusBadge";
+import { RowActionsMenu, type RowAction } from "@/components/RowActionsMenu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type FeeStructure = {
+  id: string;
+  name: string;
+  amount_minor: number;
+  is_active: boolean;
+  classes: { name: string } | null;
+};
 
 export default function FeesPage() {
   const supabase = getSupabaseClient();
@@ -30,6 +57,12 @@ export default function FeesPage() {
   const [feeName, setFeeName] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [periodMonth, setPeriodMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [editingFee, setEditingFee] = useState<FeeStructure | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<FeeStructure | null>(null);
+  const [deleteGuardCount, setDeleteGuardCount] = useState<number | null>(null);
+  const [isCheckingDelete, setIsCheckingDelete] = useState(false);
 
   const { data: currentYear } = useQuery({
     queryKey: ["current_academic_year"],
@@ -64,11 +97,103 @@ export default function FeesPage() {
       const { data, error } = await supabase
         .from("fee_structures")
         .select("*, classes(name)")
-        .eq("academic_year_id", currentYear!.id);
+        .eq("academic_year_id", currentYear!.id)
+        .order("name");
       if (error) throw error;
-      return data;
+      return data as unknown as FeeStructure[];
     },
   });
+
+  function invalidateFees() {
+    queryClient.invalidateQueries({ queryKey: ["fee_structures", currentYear?.id] });
+  }
+
+  async function saveEdit() {
+    if (!editingFee) return;
+    if (!editName.trim() || !editAmount) {
+      toast.error("Name and amount are required");
+      return;
+    }
+    const { error } = await supabase
+      .from("fee_structures")
+      .update({ name: editName.trim(), amount_minor: rupeesToMinor(editAmount) })
+      .eq("id", editingFee.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Fee structure updated");
+    setEditingFee(null);
+    invalidateFees();
+  }
+
+  async function openDeleteFlow(fee: FeeStructure) {
+    setDeleteTarget(fee);
+    setIsCheckingDelete(true);
+    try {
+      const { count, error } = await supabase
+        .from("fee_schedules")
+        .select("id", { count: "exact", head: true })
+        .eq("fee_structure_id", fee.id);
+      if (error) throw error;
+      setDeleteGuardCount(count ?? 0);
+    } catch {
+      setDeleteGuardCount(1);
+    } finally {
+      setIsCheckingDelete(false);
+    }
+  }
+
+  function closeDeleteDialog() {
+    setDeleteTarget(null);
+    setDeleteGuardCount(null);
+    setIsCheckingDelete(false);
+  }
+
+  async function archiveFee(fee: FeeStructure) {
+    const { error } = await supabase.from("fee_structures").update({ is_active: false }).eq("id", fee.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${fee.name} archived — hidden from new fee generation, history preserved`);
+    closeDeleteDialog();
+    invalidateFees();
+  }
+
+  async function reactivateFee(fee: FeeStructure) {
+    const { error } = await supabase.from("fee_structures").update({ is_active: true }).eq("id", fee.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${fee.name} reactivated`);
+    invalidateFees();
+  }
+
+  async function deleteFeePermanently() {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("fee_structures").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${deleteTarget.name} deleted`);
+    closeDeleteDialog();
+    invalidateFees();
+  }
+
+  function actionsForFee(f: FeeStructure): RowAction[] {
+    const actions: RowAction[] = [
+      { label: "Edit", onSelect: () => { setEditingFee(f); setEditName(f.name); setEditAmount(String(f.amount_minor / 100)); } },
+    ];
+    if (f.is_active) {
+      actions.push({ label: "Delete / Archive", destructive: true, separatorBefore: true, onSelect: () => openDeleteFlow(f) });
+    } else {
+      actions.push({ label: "Reactivate", separatorBefore: true, onSelect: () => reactivateFee(f) });
+    }
+    return actions;
+  }
 
   async function createFeeStructure() {
     if (!currentYear || !className || !feeName || !feeAmount) {
@@ -154,14 +279,22 @@ export default function FeesPage() {
                   <TableHead>Class</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Amount / month</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {feeStructures?.map((f) => (
-                  <TableRow key={f.id}>
-                    <TableCell>{(f.classes as unknown as { name: string })?.name}</TableCell>
+                  <TableRow key={f.id} className={f.is_active ? undefined : "opacity-60"}>
+                    <TableCell>{f.classes?.name}</TableCell>
                     <TableCell>{f.name}</TableCell>
                     <TableCell>{formatMinor(f.amount_minor)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={f.is_active ? "active" : "inactive"} />
+                    </TableCell>
+                    <TableCell>
+                      <RowActionsMenu label={f.name} actions={actionsForFee(f)} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -216,6 +349,61 @@ export default function FeesPage() {
           </section>
         </>
       )}
+
+      <Dialog open={!!editingFee} onOpenChange={(open) => !open && setEditingFee(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editingFee?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Name</label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Amount (₹) per month</label>
+              <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingFee(null)}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && closeDeleteDialog()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {deleteTarget?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isCheckingDelete
+                ? "Checking whether any fee dues have been generated from this fee structure…"
+                : deleteGuardCount && deleteGuardCount > 0
+                  ? `${deleteGuardCount} fee due(s) already reference this structure. Deleting it would destroy that financial history, so permanent deletion is blocked. Archiving hides it from future fee generation while keeping all existing dues and payments intact.`
+                  : "No fee dues reference this structure yet. It can be permanently deleted."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteDialog}>Cancel</AlertDialogCancel>
+            {!isCheckingDelete && deleteGuardCount !== null && deleteGuardCount > 0 ? (
+              <AlertDialogAction onClick={() => deleteTarget && archiveFee(deleteTarget)}>
+                Archive instead
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                onClick={deleteFeePermanently}
+                disabled={isCheckingDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete permanently
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

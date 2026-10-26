@@ -62,6 +62,7 @@ export default function StaffPage() {
   const [inviteRole, setInviteRole] = useState<(typeof INVITABLE_ROLES)[number]>("teacher");
   const [inviteDesignation, setInviteDesignation] = useState("");
   const [confirmGrantPrincipal, setConfirmGrantPrincipal] = useState<ProfileRow | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<ProfileRow | null>(null);
   const [staffRecordDialog, setStaffRecordDialog] = useState<ProfileRow | null>(null);
   const [staffRecordDesignation, setStaffRecordDesignation] = useState("");
   const [detailProfile, setDetailProfile] = useState<ProfileRow | null>(null);
@@ -137,10 +138,14 @@ export default function StaffPage() {
   }
 
   async function toggleActive(profileId: string, isActive: boolean) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_active: !isActive })
-      .eq("id", profileId);
+    // Deactivation/reactivation go through security-definer RPCs, not a
+    // direct table write: `profiles` RLS only ever granted
+    // profiles_update_own, so a direct .update() here would silently
+    // affect zero rows for anyone but yourself. The RPCs also enforce the
+    // last-active-principal lockout guard server-side.
+    const { error } = isActive
+      ? await supabase.rpc("deactivate_staff_account", { p_profile_id: profileId })
+      : await supabase.rpc("reactivate_staff_account", { p_profile_id: profileId });
     if (error) {
       toast.error(error.message);
       return;
@@ -239,7 +244,7 @@ export default function StaffPage() {
       label: p.is_active ? "Deactivate account" : "Reactivate account",
       separatorBefore: !p.staffId ? false : true,
       destructive: p.is_active,
-      onSelect: () => toggleActive(p.id, p.is_active),
+      onSelect: () => (p.is_active ? setConfirmDeactivate(p) : toggleActive(p.id, p.is_active)),
     });
 
     return actions;
@@ -315,7 +320,7 @@ export default function StaffPage() {
           <Button onClick={inviteStaff}>Send invitation</Button>
         </div>
 
-        {invitations && invitations.length > 0 && (
+        {invitations && invitations.filter((inv) => inv.status !== "revoked").length > 0 && (
           <div className="rounded-lg border border-border overflow-hidden">
             <Table>
               <TableHeader>
@@ -327,31 +332,68 @@ export default function StaffPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invitations.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                      {inv.email}
-                    </TableCell>
-                    <TableCell className="capitalize">{inv.role}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={inv.status} />
-                    </TableCell>
-                    <TableCell>
-                      {inv.status === "pending" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => revokeInvitation(inv.id)}
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {invitations
+                  .filter((inv) => inv.status !== "revoked")
+                  .map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                        {inv.email}
+                      </TableCell>
+                      <TableCell className="capitalize">{inv.role}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={inv.status} />
+                      </TableCell>
+                      <TableCell>
+                        {inv.status === "pending" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => revokeInvitation(inv.id)}
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {invitations && invitations.filter((inv) => inv.status === "revoked").length > 0 && (
+          <div className="space-y-2 pt-2">
+            <h3 className="font-heading font-semibold text-sm text-muted-foreground">
+              Revoked invitations
+            </h3>
+            <div className="rounded-lg border border-border overflow-hidden opacity-70">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/60 hover:bg-muted/60">
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitations
+                    .filter((inv) => inv.status === "revoked")
+                    .map((inv) => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="flex items-center gap-2">
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                          {inv.email}
+                        </TableCell>
+                        <TableCell className="capitalize">{inv.role}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={inv.status} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </section>
@@ -429,6 +471,33 @@ export default function StaffPage() {
               }}
             >
               Grant principal access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDeactivate} onOpenChange={(open) => !open && setConfirmDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate {confirmDeactivate?.email}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This immediately blocks sign-in and every role-gated action for this account — it is not
+              just hidden from the list, every authorization check in the system rejects it right away.
+              Their staff record, payroll, marks, and other history are fully preserved, and you can
+              reactivate the account later. The system will refuse this if it would leave the school
+              with no active principal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmDeactivate) toggleActive(confirmDeactivate.id, true);
+                setConfirmDeactivate(null);
+              }}
+            >
+              Deactivate account
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

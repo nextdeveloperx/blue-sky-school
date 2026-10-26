@@ -204,3 +204,57 @@ export function matchesPeriodLabel(incurredOn: string, label: string, granularit
   const ownLabel = granularity === "day" ? formatDayLabel(incurredOn) : formatMonthLabel(incurredOn.slice(0, 7));
   return ownLabel === label;
 }
+
+/** One calendar day's worth of expenses, for the Expenses page's by-date grouping. */
+export interface DateGroup<T> {
+  dateKey: string; // YYYY-MM-DD
+  label: string; // "Today" | "Yesterday" | "5 Jul 2026"
+  totalMinor: number; // excludes voided
+  count: number; // excludes voided
+  expenses: T[]; // every expense for this date, voided included (list view decides what to show)
+}
+
+function addDays(isoDate: string, delta: number): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  // UTC-anchored arithmetic on the plain Y/M/D components only — never
+  // constructing a Date from the original ISO string — so this can't
+  // shift the calendar day under any viewer timezone, same reasoning as
+  // formatDayLabel above.
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + delta);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Groups expenses by their `incurred_on` calendar date, newest first, with
+ * "Today"/"Yesterday" labels for the two most recent days relative to
+ * `todayIsoDate` (the caller's local today — e.g.
+ * `new Date().toLocaleDateString('en-CA')` — never `new Date().toISOString()`,
+ * which is UTC and can land on the wrong calendar day). Grouping itself needs
+ * no timezone handling at all: `incurred_on` is already a plain date with no
+ * time component, so two expenses on the same calendar day group together
+ * regardless of when during that day each was recorded, in any timezone.
+ * Older groups are never merged, rewritten, or re-dated — each existing
+ * `incurred_on` value is only ever read, not changed, as "today" advances.
+ */
+export function groupExpensesByDate<T extends ExpenseLike>(expenses: T[], todayIsoDate: string): DateGroup<T>[] {
+  const yesterday = addDays(todayIsoDate, -1);
+  const byDate = new Map<string, T[]>();
+  for (const e of expenses) {
+    const bucket = byDate.get(e.incurred_on);
+    if (bucket) bucket.push(e);
+    else byDate.set(e.incurred_on, [e]);
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([dateKey, dayExpenses]) => {
+      const active = dayExpenses.filter((e) => !e.voided_at);
+      return {
+        dateKey,
+        label: dateKey === todayIsoDate ? "Today" : dateKey === yesterday ? "Yesterday" : formatDayLabel(dateKey),
+        totalMinor: active.reduce((sum, e) => sum + e.amount_minor, 0),
+        count: active.length,
+        expenses: dayExpenses,
+      };
+    });
+}

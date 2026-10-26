@@ -14,6 +14,20 @@ import {
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { InfoHelp } from "@/components/InfoHelp";
 import { StatusBadge } from "@/components/StatusBadge";
+import { RowActionsMenu, type RowAction } from "@/components/RowActionsMenu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type ExamTerm = { id: string; name: string; status: string };
+type GradeBand = { id: string; min_percent: number; max_percent: number; grade_label: string };
 
 export default function ExamTermsPage() {
   const supabase = getSupabaseClient();
@@ -64,6 +78,11 @@ export default function ExamTermsPage() {
   const [minPercent, setMinPercent] = useState("");
   const [maxPercent, setMaxPercent] = useState("");
   const [gradeLabel, setGradeLabel] = useState("");
+  const [deleteTermTarget, setDeleteTermTarget] = useState<ExamTerm | null>(null);
+  const [deleteTermGuard, setDeleteTermGuard] = useState<number | null>(null);
+  const [deleteBandTarget, setDeleteBandTarget] = useState<GradeBand | null>(null);
+  const [deleteBandGuard, setDeleteBandGuard] = useState<number | null>(null);
+  const [isCheckingDelete, setIsCheckingDelete] = useState(false);
 
   async function createTerm() {
     if (!currentYear || !termName) {
@@ -87,10 +106,21 @@ export default function ExamTermsPage() {
       toast.error("Min %, max %, and grade label are required");
       return;
     }
+    const min = Number(minPercent);
+    const max = Number(maxPercent);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max > 100 || min > max) {
+      toast.error("Enter a valid range between 0 and 100 (min ≤ max)");
+      return;
+    }
+    const overlapping = bands?.some((b) => min <= b.max_percent && max >= b.min_percent);
+    if (overlapping) {
+      toast.error("This range overlaps an existing grade band — adjust it first");
+      return;
+    }
     const { error } = await supabase.from("grade_scale").insert({
       academic_year_id: currentYear.id,
-      min_percent: Number(minPercent),
-      max_percent: Number(maxPercent),
+      min_percent: min,
+      max_percent: max,
       grade_label: gradeLabel,
     });
     if (error) {
@@ -102,6 +132,91 @@ export default function ExamTermsPage() {
     setMaxPercent("");
     setGradeLabel("");
     queryClient.invalidateQueries({ queryKey: ["grade_scale", currentYear.id] });
+  }
+
+  async function openDeleteTermFlow(term: ExamTerm) {
+    setDeleteTermTarget(term);
+    setIsCheckingDelete(true);
+    try {
+      const [marks, results] = await Promise.all([
+        supabase.from("marks").select("id", { count: "exact", head: true }).eq("exam_term_id", term.id),
+        supabase.from("results").select("id", { count: "exact", head: true }).eq("exam_term_id", term.id),
+      ]);
+      setDeleteTermGuard((marks.count ?? 0) + (results.count ?? 0));
+    } catch {
+      setDeleteTermGuard(1);
+    } finally {
+      setIsCheckingDelete(false);
+    }
+  }
+
+  async function closeTerm(term: ExamTerm) {
+    const { error } = await supabase.from("exam_terms").update({ status: "locked" }).eq("id", term.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${term.name} closed — marks/results are preserved, no further marks entry is expected`);
+    setDeleteTermTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["exam_terms", currentYear?.id] });
+  }
+
+  async function deleteTermPermanently() {
+    if (!deleteTermTarget) return;
+    const { error } = await supabase.from("exam_terms").delete().eq("id", deleteTermTarget.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${deleteTermTarget.name} deleted`);
+    setDeleteTermTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["exam_terms", currentYear?.id] });
+  }
+
+  async function openDeleteBandFlow(band: GradeBand) {
+    setDeleteBandTarget(band);
+    setIsCheckingDelete(true);
+    try {
+      const { count, error } = await supabase
+        .from("results")
+        .select("id", { count: "exact", head: true })
+        .eq("overall_grade", band.grade_label);
+      if (error) throw error;
+      setDeleteBandGuard(count ?? 0);
+    } catch {
+      setDeleteBandGuard(1);
+    } finally {
+      setIsCheckingDelete(false);
+    }
+  }
+
+  async function deleteBandPermanently() {
+    if (!deleteBandTarget) return;
+    const { error } = await supabase.from("grade_scale").delete().eq("id", deleteBandTarget.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Grade band removed");
+    setDeleteBandTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["grade_scale", currentYear?.id] });
+  }
+
+  function closeDeleteDialogs() {
+    setDeleteTermTarget(null);
+    setDeleteTermGuard(null);
+    setDeleteBandTarget(null);
+    setDeleteBandGuard(null);
+    setIsCheckingDelete(false);
+  }
+
+  function termActions(t: ExamTerm): RowAction[] {
+    if (t.status === "locked") return [];
+    return [{ label: "Delete / Close term", destructive: true, onSelect: () => openDeleteTermFlow(t) }];
+  }
+
+  function bandActions(b: GradeBand): RowAction[] {
+    return [{ label: "Delete band", destructive: true, onSelect: () => openDeleteBandFlow(b) }];
   }
 
   return (
@@ -148,6 +263,7 @@ export default function ExamTermsPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -156,6 +272,9 @@ export default function ExamTermsPage() {
                     <TableCell>{t.name}</TableCell>
                     <TableCell>
                       <StatusBadge status={t.status} />
+                    </TableCell>
+                    <TableCell>
+                      <RowActionsMenu label={t.name} actions={termActions(t as unknown as ExamTerm)} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -179,6 +298,7 @@ export default function ExamTermsPage() {
                   <TableHead>Min %</TableHead>
                   <TableHead>Max %</TableHead>
                   <TableHead>Grade</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -187,6 +307,9 @@ export default function ExamTermsPage() {
                     <TableCell>{b.min_percent}</TableCell>
                     <TableCell>{b.max_percent}</TableCell>
                     <TableCell>{b.grade_label}</TableCell>
+                    <TableCell>
+                      <RowActionsMenu label={b.grade_label} actions={bandActions(b as unknown as GradeBand)} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -217,6 +340,62 @@ export default function ExamTermsPage() {
           </section>
         </>
       )}
+
+      <AlertDialog open={!!deleteTermTarget} onOpenChange={(open) => !open && closeDeleteDialogs()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {deleteTermTarget?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isCheckingDelete
+                ? "Checking whether any marks or results reference this term…"
+                : deleteTermGuard && deleteTermGuard > 0
+                  ? "Marks or results already exist for this term, so deleting it would invalidate historical academic records — that's blocked. Closing it instead marks it locked, keeps everything on record, and signals it's no longer open for new marks entry."
+                  : "No marks or results reference this term yet. It can be permanently deleted."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteDialogs}>Cancel</AlertDialogCancel>
+            {!isCheckingDelete && deleteTermGuard !== null && deleteTermGuard > 0 ? (
+              <AlertDialogAction onClick={() => deleteTermTarget && closeTerm(deleteTermTarget)}>
+                Close term instead
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                onClick={deleteTermPermanently}
+                disabled={isCheckingDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete permanently
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteBandTarget} onOpenChange={(open) => !open && closeDeleteDialogs()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove grade band {deleteBandTarget?.grade_label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isCheckingDelete
+                ? "Checking whether any computed results use this grade…"
+                : deleteBandGuard && deleteBandGuard > 0
+                  ? `${deleteBandGuard} existing result(s) already show "${deleteBandTarget?.grade_label}". Removing this band would leave those historical grades without a defined range behind them, so deletion is blocked to preserve the record.`
+                  : "No computed results currently show this grade. It can be safely removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteDialogs}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteBandPermanently}
+              disabled={isCheckingDelete || !!(deleteBandGuard && deleteBandGuard > 0)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete band
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

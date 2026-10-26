@@ -1,10 +1,36 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { GraduationCap, ArrowRight, BookOpen, Users, Shield } from "lucide-react";
 import CursorTrailLine from "./CursorFollowLine";
 import { CURRENT_ADMISSION_SESSION } from "@/lib/content/admissions";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 const HeroSection = () => {
+  // get_public_school_stats() is a minimal, anon-grantable security-definer
+  // RPC (migration 20261026_34) — it returns only three numbers, never a
+  // student/staff name or any row from `students`/`staff` directly.
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useQuery({
+    queryKey: ["public_school_stats"],
+    queryFn: async () => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.rpc("get_public_school_stats");
+      if (error) throw error;
+      return data?.[0] ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const heroStats = [
+    { value: statsLoading ? "…" : statsError ? "—" : `${stats?.active_student_count ?? 0}+`, label: "Students" },
+    { value: statsLoading ? "…" : statsError ? "—" : `${stats?.active_teacher_count ?? 0}+`, label: "Teachers" },
+    // Omitted entirely (not shown as "0+" or any other placeholder) until a
+    // verified establishment date is configured — see school_settings.
+    ...(!statsLoading && !statsError && stats?.years_since_established != null
+      ? [{ value: `${Math.floor(stats.years_since_established)}+`, label: "Years" }]
+      : []),
+  ];
+
   return (
     <section className="relative flex items-center overflow-hidden bg-background pt-28 pb-12 lg:min-h-screen lg:py-0">
       {/* Cursor Trail Effect - Desktop Only */}
@@ -134,18 +160,12 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Stats Row */}
-            {/* FLAG FOR SCHOOL REVIEW: these three figures are unverified —
-                they predate this review and there is no school record
-                (database or otherwise) in this codebase to confirm them
-                against. Not fabricated or changed here; confirm the real
-                counts with the school before treating them as accurate. */}
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { value: "500+", label: "Students" },
-                { value: "50+", label: "Teachers" },
-                { value: "15+", label: "Years" },
-              ].map((stat, index) => (
+            {/* Stats Row — real counts from get_public_school_stats(), not
+                promotional placeholders. "Years" only appears once a
+                verified establishment date is configured (school_settings);
+                it is never guessed or defaulted. */}
+            <div className={`grid gap-4 ${heroStats.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {heroStats.map((stat, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}

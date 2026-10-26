@@ -24,6 +24,16 @@ import { InfoHelp } from "@/components/InfoHelp";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RowActionsMenu } from "@/components/RowActionsMenu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ADJUSTMENT_KIND_EXPLANATIONS,
   ADJUSTMENT_KIND_LABELS,
   ADJUSTMENT_KINDS,
@@ -81,6 +91,7 @@ export default function PayrollPage() {
   const [isSavingSalary, setIsSavingSalary] = useState(false);
   const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
   const [editingSalaryAmount, setEditingSalaryAmount] = useState("");
+  const [removeFromPayrollTarget, setRemoveFromPayrollTarget] = useState<{ staffId: string; label: string } | null>(null);
 
   // Salary Adjustments section: add-adjustment form
   const [adjStaffId, setAdjStaffId] = useState("");
@@ -239,6 +250,28 @@ export default function PayrollPage() {
     } finally {
       setIsSavingSalary(false);
     }
+  }
+
+  // Removes a teacher/staff member from FUTURE payroll only: closes their
+  // current staff_salaries row with no replacement. generate_payroll_run
+  // only ever includes staff with an active (effective_to IS NULL) salary
+  // row, so this is sufficient and already fully RLS-covered — no new
+  // migration needed. Every past payslip and salary_adjustment keeps
+  // referencing this staff_id untouched; nothing here can delete history.
+  async function removeFromPayroll() {
+    if (!removeFromPayrollTarget) return;
+    const { error } = await supabase
+      .from("staff_salaries")
+      .update({ effective_to: new Date().toISOString().slice(0, 10) })
+      .eq("staff_id", removeFromPayrollTarget.staffId)
+      .is("effective_to", null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${removeFromPayrollTarget.label} removed from future payroll runs`);
+    setRemoveFromPayrollTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["staff_salaries"] });
   }
 
   async function generateRun() {
@@ -426,6 +459,13 @@ export default function PayrollPage() {
                                 setEditingSalaryId(s.staff_id);
                                 setEditingSalaryAmount(String(s.monthly_amount_minor / 100));
                               },
+                            },
+                            {
+                              label: "Remove from payroll",
+                              destructive: true,
+                              separatorBefore: true,
+                              onSelect: () =>
+                                setRemoveFromPayrollTarget({ staffId: s.staff_id, label: staffLabel(s.staff) }),
                             },
                           ]}
                         />
@@ -814,6 +854,32 @@ export default function PayrollPage() {
           </Table>
         )}
       </section>
+
+      <AlertDialog
+        open={!!removeFromPayrollTarget}
+        onOpenChange={(open) => !open && setRemoveFromPayrollTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {removeFromPayrollTarget?.label} from payroll?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They will not be included in any payroll run generated from now on. Every past payslip
+              and salary adjustment for them is kept exactly as it is — nothing is deleted, and already
+              disbursed amounts stay on record. This only stops future payroll processing; it does not
+              deactivate their staff account or sign-in access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={removeFromPayroll}
+            >
+              Remove from payroll
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

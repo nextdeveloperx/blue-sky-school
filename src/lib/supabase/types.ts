@@ -400,6 +400,7 @@ export type Database = {
           class_id: string
           created_at: string
           id: string
+          is_active: boolean
           name: string
         }
         Insert: {
@@ -408,6 +409,7 @@ export type Database = {
           class_id: string
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
         }
         Update: {
@@ -416,6 +418,7 @@ export type Database = {
           class_id?: string
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
         }
         Relationships: [
@@ -1673,6 +1676,22 @@ export type Database = {
       invite_staff: {
         Args: { p_designation?: string; p_email: string; p_role: string }
         Returns: string
+      }
+      deactivate_staff_account: {
+        Args: { p_profile_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      reactivate_staff_account: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
+      get_public_school_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_student_count: number
+          active_teacher_count: number
+          years_since_established: number | null
+        }[]
       }
       revoke_invitation: {
         Args: { p_invitation_id: string }

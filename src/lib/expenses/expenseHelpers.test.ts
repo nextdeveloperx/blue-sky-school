@@ -5,6 +5,7 @@ import {
   expenseFormSchema,
   filterExpenses,
   groupExpensesByCategory,
+  groupExpensesByDate,
   groupExpensesByPeriod,
   matchesPeriodLabel,
   type ExpenseFilterRow,
@@ -325,5 +326,54 @@ describe("matchesPeriodLabel", () => {
 
   it("does not confuse the same month across different years", () => {
     expect(matchesPeriodLabel("2025-07-05", "Jul 2026", "month")).toBe(false);
+  });
+});
+
+describe("groupExpensesByDate", () => {
+  const rows: ExpenseLike[] = [
+    { amount_minor: 10000, incurred_on: "2026-07-05", voided_at: null },
+    { amount_minor: 5000, incurred_on: "2026-07-05", voided_at: null },
+    { amount_minor: 2000, incurred_on: "2026-07-05", voided_at: "2026-07-06T00:00:00Z" },
+    { amount_minor: 3000, incurred_on: "2026-07-04", voided_at: null },
+    { amount_minor: 7000, incurred_on: "2026-06-20", voided_at: null },
+  ];
+
+  it("groups by calendar date, newest first", () => {
+    const groups = groupExpensesByDate(rows, "2026-07-05");
+    expect(groups.map((g) => g.dateKey)).toEqual(["2026-07-05", "2026-07-04", "2026-06-20"]);
+  });
+
+  it("labels the current day as Today and the prior day as Yesterday", () => {
+    const groups = groupExpensesByDate(rows, "2026-07-05");
+    expect(groups[0].label).toBe("Today");
+    expect(groups[1].label).toBe("Yesterday");
+    expect(groups[2].label).toBe("20 Jun 2026");
+  });
+
+  it("totals and counts each group excluding voided expenses, while still listing them", () => {
+    const groups = groupExpensesByDate(rows, "2026-07-05");
+    const today = groups[0];
+    expect(today.totalMinor).toBe(15000); // 10000 + 5000, the voided 2000 excluded
+    expect(today.count).toBe(2);
+    expect(today.expenses).toHaveLength(3); // voided row still present for history
+  });
+
+  it("re-labels groups correctly as the calendar date advances, without touching the records", () => {
+    const groupsDayLater = groupExpensesByDate(rows, "2026-07-06");
+    expect(groupsDayLater[0].label).toBe("Yesterday"); // was "Today" the day before
+    expect(groupsDayLater[0].dateKey).toBe("2026-07-05");
+    expect(groupsDayLater[0].expenses).toHaveLength(3); // same records, unmoved
+  });
+
+  it("handles a month/year boundary correctly for Yesterday", () => {
+    const groups = groupExpensesByDate(
+      [{ amount_minor: 100, incurred_on: "2026-06-30", voided_at: null }],
+      "2026-07-01",
+    );
+    expect(groups[0].label).toBe("Yesterday");
+  });
+
+  it("returns an empty list for no expenses", () => {
+    expect(groupExpensesByDate([], "2026-07-05")).toEqual([]);
   });
 });

@@ -51,6 +51,7 @@ import {
   computeExpenseTotals,
   filterExpenses,
   groupExpensesByCategory,
+  groupExpensesByDate,
   groupExpensesByPeriod,
   matchesPeriodLabel,
   PAYMENT_METHOD_LABELS,
@@ -218,8 +219,14 @@ export default function ExpensesPage() {
     });
   }, [expenses, search, categoryFilter, methodFilter, dateFrom, dateTo, includeVoided]);
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Local calendar date, not toISOString()'s UTC date — a viewer west of
+  // UTC near midnight would otherwise see "today" labeled as yesterday (or
+  // vice versa east of UTC). en-CA formats as YYYY-MM-DD, matching
+  // `incurred_on`'s own format exactly.
+  const today = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
   const monthPrefix = today.slice(0, 7);
+
+  const dateGroups = useMemo(() => groupExpensesByDate(filtered, today), [filtered, today]);
 
   const totals = useMemo(
     () =>
@@ -443,74 +450,93 @@ export default function ExpensesPage() {
               : "No expenses recorded yet — use \"Add expense\" to record the first one."}
           </p>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/60 hover:bg-muted/60">
-                  <TableHead>Date</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Recorded by</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((e) => {
-                  const categoryName = e.category_name;
-                  const editable: EditableExpense = {
-                    id: e.id,
-                    title: e.title,
-                    category_id: e.category_id,
-                    incurred_on: e.incurred_on,
-                    amount_minor: e.amount_minor,
-                    payment_method: e.payment_method,
-                    vendor: e.vendor,
-                    description: e.description,
-                    receipt_ref: e.receipt_ref,
-                  };
-                  return (
-                    <TableRow key={e.id} className={e.voided_at ? "opacity-60" : undefined}>
-                      <TableCell className="whitespace-nowrap">{e.incurred_on}</TableCell>
-                      <TableCell className="font-medium">{e.title}</TableCell>
-                      <TableCell>{categoryName ?? "—"}</TableCell>
-                      <TableCell>{e.vendor ?? "—"}</TableCell>
-                      <TableCell className="capitalize">
-                        {PAYMENT_METHOD_LABELS[e.payment_method as keyof typeof PAYMENT_METHOD_LABELS] ??
-                          e.payment_method}
-                      </TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">{formatMinor(e.amount_minor)}</TableCell>
-                      <TableCell>{e.recorded_by_name ?? "—"}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={e.voided_at ? "voided" : "active"} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
-                          {!e.voided_at && (
-                            <>
-                              <ExpenseFormDialog
-                                categories={categories ?? []}
-                                mode="edit"
-                                expense={editable}
-                                trigger={
-                                  <Button variant="ghost" size="icon" aria-label={`Edit ${e.title}`}>
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                }
-                              />
-                              <VoidExpenseAction expenseId={e.id} title={e.title} />
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <div className="space-y-3">
+            {dateGroups.map((group, i) => (
+              <details
+                key={group.dateKey}
+                open={i === 0}
+                className="rounded-lg border border-border overflow-hidden group"
+              >
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/60 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                  <span className="font-heading font-semibold text-sm text-foreground">
+                    {group.label}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      ({new Date(`${group.dateKey}T00:00:00`).toLocaleDateString()})
+                    </span>
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {group.count} expense{group.count === 1 ? "" : "s"} · {formatMinor(group.totalMinor)}
+                  </span>
+                </summary>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/60 hover:bg-muted/60">
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Recorded by</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.expenses.map((e) => {
+                        const categoryName = e.category_name;
+                        const editable: EditableExpense = {
+                          id: e.id,
+                          title: e.title,
+                          category_id: e.category_id,
+                          incurred_on: e.incurred_on,
+                          amount_minor: e.amount_minor,
+                          payment_method: e.payment_method,
+                          vendor: e.vendor,
+                          description: e.description,
+                          receipt_ref: e.receipt_ref,
+                        };
+                        return (
+                          <TableRow key={e.id} className={e.voided_at ? "opacity-60" : undefined}>
+                            <TableCell className="font-medium">{e.title}</TableCell>
+                            <TableCell>{categoryName ?? "—"}</TableCell>
+                            <TableCell>{e.vendor ?? "—"}</TableCell>
+                            <TableCell className="capitalize">
+                              {PAYMENT_METHOD_LABELS[e.payment_method as keyof typeof PAYMENT_METHOD_LABELS] ??
+                                e.payment_method}
+                            </TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{formatMinor(e.amount_minor)}</TableCell>
+                            <TableCell>{e.recorded_by_name ?? "—"}</TableCell>
+                            <TableCell>
+                              <StatusBadge status={e.voided_at ? "voided" : "active"} />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-end gap-1">
+                                {!e.voided_at && (
+                                  <>
+                                    <ExpenseFormDialog
+                                      categories={categories ?? []}
+                                      mode="edit"
+                                      expense={editable}
+                                      trigger={
+                                        <Button variant="ghost" size="icon" aria-label={`Edit ${e.title}`}>
+                                          <Pencil className="w-4 h-4" />
+                                        </Button>
+                                      }
+                                    />
+                                    <VoidExpenseAction expenseId={e.id} title={e.title} />
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </details>
+            ))}
           </div>
         )}
       </section>
