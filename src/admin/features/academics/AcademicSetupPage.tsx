@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RowActionsMenu } from "@/components/RowActionsMenu";
 import {
   Table,
   TableBody,
@@ -65,6 +67,9 @@ export default function AcademicSetupPage() {
   const [className, setClassName] = useState("");
   const [sectionTargets, setSectionTargets] = useState<Record<string, string>>({});
   const [subjectName, setSubjectName] = useState("");
+  const [editingClass, setEditingClass] = useState<{ id: string; name: string } | null>(null);
+  const [editingSection, setEditingSection] = useState<{ id: string; name: string } | null>(null);
+  const [editingSubject, setEditingSubject] = useState<{ id: string; name: string } | null>(null);
 
   async function createYear() {
     if (!yearLabel || !yearStart || !yearEnd) {
@@ -128,6 +133,103 @@ export default function AcademicSetupPage() {
     toast.success("Subject created");
     setSubjectName("");
     queryClient.invalidateQueries({ queryKey: ["subjects", currentYear.id] });
+  }
+
+  function friendlyDeleteError(error: { code?: string; message: string }, what: string) {
+    if (error.code === "23503") {
+      return `Can't delete this ${what} — students or other records still reference it. Move or remove those first.`;
+    }
+    return error.message;
+  }
+
+  async function deleteClass(classId: string) {
+    if (!confirm("Delete this class and its sections? This can't be undone.")) return;
+    const { error } = await supabase.from("classes").delete().eq("id", classId);
+    if (error) {
+      toast.error(friendlyDeleteError(error, "class"));
+      return;
+    }
+    toast.success("Class deleted");
+    queryClient.invalidateQueries({ queryKey: ["classes", currentYear?.id] });
+  }
+
+  async function deleteSection(sectionId: string) {
+    if (!confirm("Delete this section? This can't be undone.")) return;
+    const { error } = await supabase.from("sections").delete().eq("id", sectionId);
+    if (error) {
+      toast.error(friendlyDeleteError(error, "section"));
+      return;
+    }
+    toast.success("Section deleted");
+    queryClient.invalidateQueries({ queryKey: ["classes", currentYear?.id] });
+  }
+
+  async function deleteSubject(subjectId: string) {
+    if (!confirm("Delete this subject? This can't be undone.")) return;
+    const { error } = await supabase.from("subjects").delete().eq("id", subjectId);
+    if (error) {
+      toast.error(friendlyDeleteError(error, "subject"));
+      return;
+    }
+    toast.success("Subject deleted");
+    queryClient.invalidateQueries({ queryKey: ["subjects", currentYear?.id] });
+  }
+
+  async function renameClass() {
+    if (!editingClass) return;
+    if (!editingClass.name.trim()) {
+      toast.error("Class name is required");
+      return;
+    }
+    const { error } = await supabase
+      .from("classes")
+      .update({ name: editingClass.name.trim() })
+      .eq("id", editingClass.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Class renamed");
+    setEditingClass(null);
+    queryClient.invalidateQueries({ queryKey: ["classes", currentYear?.id] });
+  }
+
+  async function renameSection() {
+    if (!editingSection) return;
+    if (!editingSection.name.trim()) {
+      toast.error("Section name is required");
+      return;
+    }
+    const { error } = await supabase
+      .from("sections")
+      .update({ name: editingSection.name.trim() })
+      .eq("id", editingSection.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Section renamed");
+    setEditingSection(null);
+    queryClient.invalidateQueries({ queryKey: ["classes", currentYear?.id] });
+  }
+
+  async function renameSubject() {
+    if (!editingSubject) return;
+    if (!editingSubject.name.trim()) {
+      toast.error("Subject name is required");
+      return;
+    }
+    const { error } = await supabase
+      .from("subjects")
+      .update({ name: editingSubject.name.trim() })
+      .eq("id", editingSubject.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Subject renamed");
+    setEditingSubject(null);
+    queryClient.invalidateQueries({ queryKey: ["subjects", currentYear?.id] });
   }
 
   async function createSection(classId: string) {
@@ -210,11 +312,92 @@ export default function AcademicSetupPage() {
             </div>
             <div className="space-y-4">
               {classes?.map((c) => (
-                <div key={c.id} className="card-elevated p-4 space-y-2">
-                  <h3 className="font-semibold">{c.name}</h3>
-                  <ul className="text-sm text-muted-foreground">
+                <div key={c.id} className="card-elevated p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    {editingClass?.id === c.id ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Input
+                          autoFocus
+                          className="h-8"
+                          value={editingClass.name}
+                          onChange={(e) => setEditingClass({ id: c.id, name: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && renameClass()}
+                        />
+                        <Button variant="ghost" size="icon" aria-label="Save" onClick={renameClass}>
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Cancel"
+                          onClick={() => setEditingClass(null)}
+                        >
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-semibold">{c.name}</h3>
+                        <RowActionsMenu
+                          label={c.name}
+                          actions={[
+                            { label: "Edit", onSelect: () => setEditingClass({ id: c.id, name: c.name }) },
+                            {
+                              label: "Delete",
+                              onSelect: () => deleteClass(c.id),
+                              destructive: true,
+                              separatorBefore: true,
+                            },
+                          ]}
+                        />
+                      </>
+                    )}
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
                     {(c.sections ?? []).map((s: { id: string; name: string }) => (
-                      <li key={s.id}>Section {s.name}</li>
+                      <li key={s.id} className="flex items-center justify-between">
+                        {editingSection?.id === s.id ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <Input
+                              autoFocus
+                              className="h-7"
+                              value={editingSection.name}
+                              onChange={(e) => setEditingSection({ id: s.id, name: e.target.value })}
+                              onKeyDown={(e) => e.key === "Enter" && renameSection()}
+                            />
+                            <Button variant="ghost" size="icon" aria-label="Save" onClick={renameSection}>
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Cancel"
+                              onClick={() => setEditingSection(null)}
+                            >
+                              <X className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span>Section {s.name}</span>
+                            <RowActionsMenu
+                              label={`Section ${s.name}`}
+                              actions={[
+                                {
+                                  label: "Edit",
+                                  onSelect: () => setEditingSection({ id: s.id, name: s.name }),
+                                },
+                                {
+                                  label: "Delete",
+                                  onSelect: () => deleteSection(s.id),
+                                  destructive: true,
+                                  separatorBefore: true,
+                                },
+                              ]}
+                            />
+                          </>
+                        )}
+                      </li>
                     ))}
                   </ul>
                   <div className="flex gap-2 items-end">
@@ -246,11 +429,51 @@ export default function AcademicSetupPage() {
         {currentYear && (
           <>
             <ul className="text-sm text-muted-foreground flex flex-wrap gap-2">
-              {subjects?.map((s) => (
-                <li key={s.id} className="px-3 py-1 rounded-full bg-muted">
-                  {s.name}
-                </li>
-              ))}
+              {subjects?.map((s) =>
+                editingSubject?.id === s.id ? (
+                  <li key={s.id} className="flex items-center gap-1">
+                    <Input
+                      autoFocus
+                      className="h-7 w-36"
+                      value={editingSubject.name}
+                      onChange={(e) => setEditingSubject({ id: s.id, name: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && renameSubject()}
+                    />
+                    <Button variant="ghost" size="icon" className="h-5 w-5" aria-label="Save" onClick={renameSubject}>
+                      <Check className="h-3 w-3 text-emerald-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5"
+                      aria-label="Cancel"
+                      onClick={() => setEditingSubject(null)}
+                    >
+                      <X className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </li>
+                ) : (
+                  <li
+                    key={s.id}
+                    className="pl-3 pr-1 py-1 rounded-full bg-muted flex items-center gap-1"
+                  >
+                    {s.name}
+                    <RowActionsMenu
+                      label={s.name}
+                      className="h-5 w-5"
+                      actions={[
+                        { label: "Edit", onSelect: () => setEditingSubject({ id: s.id, name: s.name }) },
+                        {
+                          label: "Delete",
+                          onSelect: () => deleteSubject(s.id),
+                          destructive: true,
+                          separatorBefore: true,
+                        },
+                      ]}
+                    />
+                  </li>
+                ),
+              )}
             </ul>
             <div className="flex gap-2 items-end">
               <div>

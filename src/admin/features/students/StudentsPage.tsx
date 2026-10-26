@@ -1,4 +1,6 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -7,11 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/StatusBadge";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import AddStudentDialog from "./AddStudentDialog";
 
 export default function StudentsPage() {
   const supabase = getSupabaseClient();
+  const [search, setSearch] = useState("");
 
   const { data: currentYear } = useQuery({
     queryKey: ["current_academic_year"],
@@ -38,6 +43,24 @@ export default function StudentsPage() {
     },
   });
 
+  const filteredStudents = useMemo(() => {
+    if (!students) return students;
+    const q = search.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter((s) => {
+      const sectionInfo = s.sections as unknown as {
+        name: string;
+        classes: { name: string } | null;
+      } | null;
+      const classSection = sectionInfo ? `${sectionInfo.classes?.name ?? ""} ${sectionInfo.name}` : "";
+      return (
+        s.full_name.toLowerCase().includes(q) ||
+        s.admission_no.toLowerCase().includes(q) ||
+        classSection.toLowerCase().includes(q)
+      );
+    });
+  }, [students, search]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -54,34 +77,53 @@ export default function StudentsPage() {
         </p>
       )}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Admission No.</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Class / Section</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students?.map((s) => {
-            const sectionInfo = s.sections as unknown as {
-              name: string;
-              classes: { name: string } | null;
-            } | null;
-            return (
-              <TableRow key={s.id}>
-                <TableCell>{s.admission_no}</TableCell>
-                <TableCell>{s.full_name}</TableCell>
-                <TableCell>
-                  {sectionInfo ? `${sectionInfo.classes?.name} - ${sectionInfo.name}` : "—"}
-                </TableCell>
-                <TableCell>{s.status}</TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by name, admission no., or class..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+      {students && (
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredStudents?.length ?? 0} of {students.length} students
+        </p>
+      )}
+
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/60 hover:bg-muted/60">
+              <TableHead>Admission No.</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Class / Section</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredStudents?.map((s) => {
+              const sectionInfo = s.sections as unknown as {
+                name: string;
+                classes: { name: string } | null;
+              } | null;
+              return (
+                <TableRow key={s.id}>
+                  <TableCell className="font-mono text-sm">{s.admission_no}</TableCell>
+                  <TableCell className="font-medium">{s.full_name}</TableCell>
+                  <TableCell>
+                    {sectionInfo ? `${sectionInfo.classes?.name} - ${sectionInfo.name}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={s.status} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

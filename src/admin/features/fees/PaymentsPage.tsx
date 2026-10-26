@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/table";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { formatMinor, isValidMinor, sumMinor } from "@/lib/finance/money";
+import { StatusBadge } from "@/components/StatusBadge";
+import { InfoHelp } from "@/components/InfoHelp";
+import { StudentSearchCombobox, type StudentSearchResult } from "./StudentSearchCombobox";
 
 type PaymentMethod = "cash" | "upi" | "bank_transfer";
 
@@ -28,26 +31,18 @@ export default function PaymentsPage() {
   const queryClient = useQueryClient();
 
   const [studentId, setStudentId] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<StudentSearchResult | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [referenceNote, setReferenceNote] = useState("");
   const [allocationInputs, setAllocationInputs] = useState<Record<string, string>>({});
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
-  // Per-row, not a single flag — refunding one payment shouldn't block
-  // refunding a different one, but re-clicking the SAME row's button must
-  // be inert while that refund is still in flight.
-  const [refundingPaymentId, setRefundingPaymentId] = useState<string | null>(null);
 
-  const { data: students } = useQuery({
-    queryKey: ["students_for_payment"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("students")
-        .select("id, admission_no, full_name")
-        .order("full_name");
-      if (error) throw error;
-      return data;
-    },
-  });
+  function selectStudent(student: StudentSearchResult) {
+    setSelectedStudent(student);
+    setStudentId(student.id);
+    setAllocationInputs({});
+    setReferenceNote("");
+  }
 
   const { data: outstanding } = useQuery({
     queryKey: ["outstanding_fee_schedules", studentId],
@@ -139,96 +134,91 @@ export default function PaymentsPage() {
     }
   }
 
-  async function refund(paymentId: string) {
-    if (refundingPaymentId) return;
-
-    const reason = window.prompt("Reason for refund?");
-    if (!reason) return;
-
-    setRefundingPaymentId(paymentId);
-    try {
-      const idempotencyKey = crypto.randomUUID();
-      const { data, error } = await supabase.rpc("issue_refund", {
-        p_payment_id: paymentId,
-        p_reason: reason,
-        p_idempotency_key: idempotencyKey,
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      toast.success(`Refund issued — receipt ${data?.[0]?.refund_receipt_number}`);
-      queryClient.invalidateQueries({ queryKey: ["outstanding_fee_schedules", studentId] });
-      queryClient.invalidateQueries({ queryKey: ["payments_for_student", studentId] });
-    } finally {
-      setRefundingPaymentId(null);
-    }
-  }
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-foreground">Payments</h1>
-        <p className="text-muted-foreground">
-          Record a manual payment (cash / UPI / bank transfer) against one or more due months.
-        </p>
+      <div className="flex items-center gap-2">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-foreground">Payments</h1>
+          <p className="text-muted-foreground">
+            Record a payment, allocate it to due fees, and view the receipt.
+          </p>
+        </div>
+        <InfoHelp
+          title="Payments"
+          content={{
+            purpose:
+              "Record money a student's family has actually paid, and apply it against their outstanding fee dues (in full or split across several months).",
+            steps: [
+              "Search for the student by name or admission number.",
+              "Enter the amount being paid against one or more of their outstanding dues below.",
+              "Choose how it was paid (cash, UPI, or bank transfer) and add a reference note if useful.",
+              "Select \"Record payment\" — a receipt number is generated automatically.",
+            ],
+            rules: [
+              "A due only shows here if it's not already fully paid.",
+              "You can split one payment across several months at once, or pay part of a single due.",
+              "Every payment is permanently recorded — there is no undo button here by design; refunds are not currently supported in this system.",
+            ],
+            nextSteps:
+              "The due's status updates immediately (pending → partial → paid), and the payment appears in \"Recent payments\" below with its receipt number.",
+          }}
+        />
       </div>
 
-      <Select value={studentId} onValueChange={setStudentId}>
-        <SelectTrigger className="w-72">
-          <SelectValue placeholder="Select student" />
-        </SelectTrigger>
-        <SelectContent>
-          {students?.map((s) => (
-            <SelectItem key={s.id} value={s.id}>
-              {s.admission_no} — {s.full_name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <StudentSearchCombobox
+        value={studentId}
+        selectedLabel={
+          selectedStudent
+            ? `${selectedStudent.admission_no} — ${selectedStudent.full_name}`
+            : null
+        }
+        onSelect={selectStudent}
+      />
 
       {studentId && (
         <>
-          <section className="space-y-3">
+          <section className="card-elevated p-4 space-y-3">
             <h2 className="font-heading font-semibold text-lg">Outstanding dues</h2>
             {outstanding?.length === 0 && (
               <p className="text-muted-foreground text-sm">No dues outstanding.</p>
             )}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fee</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Pay (₹)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {outstanding?.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell>{(o.fee_structures as unknown as { name: string })?.name}</TableCell>
-                    <TableCell>{o.period_month}</TableCell>
-                    <TableCell>{formatMinor(o.amount_due_minor)}</TableCell>
-                    <TableCell>{o.status}</TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        className="w-28"
-                        value={allocationInputs[o.id] ?? ""}
-                        onChange={(e) =>
-                          setAllocationInputs((prev) => ({ ...prev, [o.id]: e.target.value }))
-                        }
-                      />
-                    </TableCell>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/60 hover:bg-muted/60">
+                    <TableHead>Fee</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Due</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Pay (₹)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {outstanding?.map((o) => (
+                    <TableRow key={o.id}>
+                      <TableCell>{(o.fee_structures as unknown as { name: string })?.name}</TableCell>
+                      <TableCell>{o.period_month}</TableCell>
+                      <TableCell className="font-medium">{formatMinor(o.amount_due_minor)}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={o.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          className="w-28"
+                          value={allocationInputs[o.id] ?? ""}
+                          onChange={(e) =>
+                            setAllocationInputs((prev) => ({ ...prev, [o.id]: e.target.value }))
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
-            <div className="flex gap-2 items-end flex-wrap">
+            <div className="flex gap-2 items-end flex-wrap pt-1">
               <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Method" />
@@ -245,7 +235,7 @@ export default function PaymentsPage() {
                 value={referenceNote}
                 onChange={(e) => setReferenceNote(e.target.value)}
               />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm font-medium text-foreground">
                 Total: {formatMinor(totalAmountMinor)}
               </span>
               <Button
@@ -257,43 +247,32 @@ export default function PaymentsPage() {
             </div>
           </section>
 
-          <section className="space-y-3">
+          <section className="card-elevated p-4 space-y-3">
             <h2 className="font-heading font-semibold text-lg">Recent payments</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Receipt</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentPayments?.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      {p.receipt_number} {p.is_refund && <span className="text-destructive">(refund)</span>}
-                    </TableCell>
-                    <TableCell>{formatMinor(p.amount_minor)}</TableCell>
-                    <TableCell>{p.method}</TableCell>
-                    <TableCell>{new Date(p.received_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {!p.is_refund && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => refund(p.id)}
-                          disabled={refundingPaymentId === p.id}
-                        >
-                          {refundingPaymentId === p.id ? "Refunding…" : "Refund"}
-                        </Button>
-                      )}
-                    </TableCell>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/60 hover:bg-muted/60">
+                    <TableHead>Receipt</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentPayments?.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-mono text-sm">
+                        {p.receipt_number} {p.is_refund && <span className="text-destructive">(refund)</span>}
+                      </TableCell>
+                      <TableCell className="font-medium">{formatMinor(p.amount_minor)}</TableCell>
+                      <TableCell className="capitalize">{p.method.replace("_", " ")}</TableCell>
+                      <TableCell>{new Date(p.received_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </section>
         </>
       )}

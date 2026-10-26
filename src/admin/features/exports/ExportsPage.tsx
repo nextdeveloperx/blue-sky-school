@@ -102,13 +102,20 @@ export default function ExportsPage() {
           };
         });
       } else if (type === "expenses") {
+        // Voided expenses are excluded here (same as the Daily Expenses page's
+        // default view) so this export's totals always match an unfiltered,
+        // "active expenses only" report.
         const { data, error } = await supabase
           .from("expenses")
-          .select("incurred_on, amount_minor, description, expense_categories(name)");
+          .select("incurred_on, title, amount_minor, payment_method, vendor, description, expense_categories(name)")
+          .is("voided_at", null);
         if (error) throw error;
         rows = (data ?? []).map((e) => ({
           date: e.incurred_on,
+          title: e.title,
           category: (e.expense_categories as unknown as { name: string })?.name,
+          vendor: e.vendor,
+          payment_method: e.payment_method,
           amount: formatMinor(e.amount_minor),
           description: e.description,
         }));

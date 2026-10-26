@@ -17,7 +17,7 @@ Live: [blue-sky-school.vercel.app](https://blue-sky-school.vercel.app)
   route, and it only ever creates a **parent** account.
 - **Admin app** (`/admin/*`) — principal, accountant, and teacher
   dashboards: academic setup, students, staff & role management, teacher
-  assignments, fees, payments & refunds, payroll, exams, marks, results,
+  assignments, fees, payments, payroll, exams, marks, results,
   parent-link verification, expenses, exports, and the audit log. Access is
   gated client-side by `RequireRole` for UX and, for real, by Postgres RLS.
 - **Family dashboard** (`/portal/*`, internal route name kept for backward

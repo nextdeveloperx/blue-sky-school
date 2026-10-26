@@ -62,6 +62,19 @@ for the user-facing structure.
   write policy for anyone, full validation + rate limiting inside the
   function itself, and nothing in its signature that could ever set a
   staff-only column.
+- **`20261019_27_refund_concurrency_guard.sql` must never be applied.** The
+  principal decided refunds are not a feature of this system at all (the
+  refund UI/RPC-call has been removed from the frontend). Migrations are
+  append-only history, so this already-committed file is intentionally
+  left in place rather than deleted or rewritten — deleting a committed
+  migration breaks the ability to reconstruct what the repo looked like at
+  any past commit, and silently renumbering/skipping files risks a future
+  migration runner applying the wrong set. The refunds/refund_allocations
+  tables and the issue_refund RPC from migration 12 remain in production
+  (a prior, already-applied migration) — this rule only blocks migration 27
+  specifically, which would have added a concurrency guard to a feature
+  that's no longer in use. If refunds are ever revived, re-evaluate 27 on
+  its own merits rather than reflexively applying it.
 
 ## Roles and auth model
 

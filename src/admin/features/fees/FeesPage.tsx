@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { rupeesToMinor, formatMinor } from "@/lib/finance/money";
+import { InfoHelp } from "@/components/InfoHelp";
 
 export default function FeesPage() {
   const supabase = getSupabaseClient();
@@ -100,14 +101,43 @@ export default function FeesPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(`Generated ${data} fee schedule row(s) for ${periodMonth}`);
+    if (data === 0) {
+      toast.success(
+        `No new fee dues were needed for ${periodMonth} — every active student already had one.`,
+      );
+    } else {
+      toast.success(
+        `Created ${data} new fee due${data === 1 ? "" : "s"} for ${periodMonth}. Students who already had one for this month were left unchanged.`,
+      );
+    }
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-foreground">Fees</h1>
-        <p className="text-muted-foreground">Monthly fee structures and schedule generation.</p>
+      <div className="flex items-center gap-2">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-foreground">Fees</h1>
+          <p className="text-muted-foreground">Set what each class owes, then create monthly dues.</p>
+        </div>
+        <InfoHelp
+          title="Fees"
+          content={{
+            purpose:
+              "Set how much each class owes per fee (like tuition), then create the amount each student owes for a given month. This does not record any payment — use the Payments page for that.",
+            steps: [
+              "Add a fee structure: pick a class, name the fee, and set the monthly amount.",
+              "Pick a month and select \"Generate fee dues\".",
+              "Review the summary message to see how many new dues were created.",
+            ],
+            rules: [
+              "Only students marked active in the selected class get a due.",
+              "Running this again for the same month never creates a second due for a student who already has one.",
+              "This only creates the amount owed — it does not take any money. Record actual payments on the Payments page.",
+            ],
+            nextSteps:
+              "New dues appear on each student's Payments page as outstanding, ready to be paid in full or in part.",
+          }}
+        />
       </div>
 
       {!currentYear && (
@@ -117,7 +147,7 @@ export default function FeesPage() {
       {currentYear && (
         <>
           <section className="space-y-3">
-            <h2 className="font-heading font-semibold text-lg">Fee Structures</h2>
+            <h2 className="font-heading font-semibold text-lg">What each class owes</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -167,18 +197,21 @@ export default function FeesPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="font-heading font-semibold text-lg">Generate Monthly Schedules</h2>
+            <h2 className="font-heading font-semibold text-lg">Create monthly fee dues</h2>
             <p className="text-muted-foreground text-sm">
-              Creates one due amount per active student per fee structure for the selected month.
-              Safe to re-run — already-generated students are skipped.
+              Create monthly fee dues for active students. Choose a month and select Generate.
+              Students who already have a due for that month will not get a second one.
             </p>
-            <div className="flex gap-2 items-end">
-              <Input
-                type="month"
-                value={periodMonth}
-                onChange={(e) => setPeriodMonth(e.target.value)}
-              />
-              <Button onClick={generateSchedules}>Generate for this month</Button>
+            <div className="flex gap-2 items-end flex-wrap">
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Select month</label>
+                <Input
+                  type="month"
+                  value={periodMonth}
+                  onChange={(e) => setPeriodMonth(e.target.value)}
+                />
+              </div>
+              <Button onClick={generateSchedules}>Generate fee dues</Button>
             </div>
           </section>
         </>

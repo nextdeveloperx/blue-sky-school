@@ -232,8 +232,16 @@ export type Database = {
           description: string | null
           id: string
           incurred_on: string
+          payment_method: string
           receipt_ref: string | null
           recorded_by: string
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+          vendor: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_minor: number
@@ -242,8 +250,16 @@ export type Database = {
           description?: string | null
           id?: string
           incurred_on: string
+          payment_method: string
           receipt_ref?: string | null
           recorded_by: string
+          title: string
+          updated_at?: string | null
+          updated_by?: string | null
+          vendor?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_minor?: number
@@ -252,8 +268,16 @@ export type Database = {
           description?: string | null
           id?: string
           incurred_on?: string
+          payment_method?: string
           receipt_ref?: string | null
           recorded_by?: string
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          vendor?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -266,6 +290,20 @@ export type Database = {
           {
             foreignKeyName: "expenses_recorded_by_fkey"
             columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_voided_by_fkey"
+            columns: ["voided_by"]
             isOneToOne: false
             referencedRelation: "staff"
             referencedColumns: ["id"]

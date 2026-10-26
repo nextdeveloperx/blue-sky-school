@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { InfoHelp } from "@/components/InfoHelp";
+import { StatusBadge } from "@/components/StatusBadge";
 
 export default function ExamTermsPage() {
   const supabase = getSupabaseClient();
@@ -104,14 +106,33 @@ export default function ExamTermsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-heading font-bold text-2xl text-foreground">
-          Exam Terms &amp; Grade Scale
-        </h1>
-        <p className="text-muted-foreground">
-          Terms (e.g. Term 1, Annual) and the percentage-to-grade bands used when results are
-          computed.
-        </p>
+      <div className="flex items-center gap-2">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-foreground">
+            Exam Terms &amp; Grade Scale
+          </h1>
+          <p className="text-muted-foreground">
+            Terms (e.g. Term 1, Annual) and the percentage-to-grade bands used when results are
+            computed.
+          </p>
+        </div>
+        <InfoHelp
+          title="Exam Terms & Grade Scale"
+          content={{
+            purpose:
+              "An exam term (like \"Term 1\") is what marks and results are grouped under. The grade scale decides which letter grade a percentage turns into when results are calculated.",
+            steps: [
+              "Add a term name (e.g. \"Term 1\", \"Annual Exam\") to start collecting marks for it.",
+              "Add grade bands as a minimum %, maximum %, and the grade letter for that range (e.g. 90-100 = A1).",
+            ],
+            rules: [
+              "Status shown here (\"open\"/\"locked\") is informational only right now — it does not yet stop a teacher from entering or changing marks. The actual protection is on each student's individual result: once the principal approves or publishes it, that student's marks lock automatically and only the principal can reopen them for correction.",
+              "Grade bands apply to every result calculated under this academic year, including ones already computed — adding or changing a band can change grades on existing results the next time they're recalculated.",
+            ],
+            nextSteps:
+              "Teachers enter marks against the term you create here; grades shown on results come from whichever band the final percentage falls into.",
+          }}
+        />
       </div>
 
       {!currentYear && (
@@ -133,7 +154,9 @@ export default function ExamTermsPage() {
                 {terms?.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell>{t.name}</TableCell>
-                    <TableCell>{t.status}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={t.status} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

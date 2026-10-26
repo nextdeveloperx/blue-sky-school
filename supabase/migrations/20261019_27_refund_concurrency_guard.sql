@@ -1,3 +1,26 @@
+-- ============================================================================
+-- STATUS: DO NOT APPLY. Kept only for historical/audit continuity.
+--
+-- The principal decided refunds are not a feature of this system at all —
+-- the refund action has been removed from the frontend entirely (see the
+-- "no refund functionality" change). This migration only hardens an
+-- already-applied feature (issue_refund, from migration 12) against a
+-- concurrency bug; since that feature is no longer exposed anywhere in the
+-- app, there is nothing left for this migration to protect, and it must
+-- stay unapplied.
+--
+-- This file is intentionally left in place rather than deleted or
+-- rewritten: migrations are append-only history here, and removing or
+-- renumbering an already-committed one risks a mismatch between the repo's
+-- migration list and whatever has already been run against any environment,
+-- and destroys the ability to see what was once intended. See CLAUDE.md's
+-- "Hard rules" section for the full rationale.
+--
+-- The refunds / refund_allocations tables and the original issue_refund
+-- RPC (migration 12) remain in the live schema untouched by this decision —
+-- only this follow-up concurrency-guard migration is blocked.
+-- ============================================================================
+
 -- Security remediation: prevent a payment from being refunded twice.
 --
 -- Schema change: a UNIQUE constraint on refunds.original_payment_id. Current

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -144,7 +145,7 @@ export default function TeacherAssignmentsPage() {
       )}
 
       {currentYear && (
-        <div className="flex gap-2 items-end flex-wrap">
+        <div className="card-elevated p-4 flex gap-2 items-end flex-wrap">
           <Select value={sectionId} onValueChange={setSectionId}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Section" />
@@ -185,9 +186,23 @@ export default function TeacherAssignmentsPage() {
         </div>
       )}
 
+      {assignments?.length === 0 ? (
+        <div className="card-elevated p-10 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <Link2 className="w-7 h-7 text-primary" aria-hidden="true" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-heading font-semibold text-lg text-foreground">No assignments yet</h2>
+            <p className="text-muted-foreground text-sm max-w-sm">
+              Pick a section, subject, and teacher above to assign who teaches what this year.
+            </p>
+          </div>
+        </div>
+      ) : (
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-muted/60 hover:bg-muted/60">
             <TableHead>Section</TableHead>
             <TableHead>Subject</TableHead>
             <TableHead>Teacher</TableHead>
@@ -221,6 +236,8 @@ export default function TeacherAssignmentsPage() {
           })}
         </TableBody>
       </Table>
+      </div>
+      )}
     </div>
   );
 }
