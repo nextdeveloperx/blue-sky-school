@@ -14,8 +14,8 @@ const PortalShell = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border h-14 flex items-center justify-between px-4">
+    <div className="min-h-screen flex flex-col bg-[hsl(var(--admin-background))]">
+      <header className="border-b border-border bg-card h-14 flex items-center justify-between px-4 shadow-sm">
         <Link to="/portal" className="flex items-center gap-2">
           <img src={logo} alt="Blue Sky School crest" className="w-8 h-8 object-contain shrink-0" />
           <span className="font-heading font-semibold text-sm">Blue Sky Family Dashboard</span>

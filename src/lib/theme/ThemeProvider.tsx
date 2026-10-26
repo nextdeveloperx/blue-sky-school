@@ -17,20 +17,38 @@ function readStoredTheme(): Theme {
   return stored === "dark" ? "dark" : "light"; // light is the default, never system-derived
 }
 
+// Applied at module scope (runs once on import, before React's first paint
+// in this client-rendered SPA) so there is no flash of the wrong theme —
+// same reasoning the old wrapper-<div> approach used, just targeting the
+// right element. See the comment below for why `<html>` specifically
+// matters, not just "somewhere in the tree".
+if (typeof document !== "undefined") {
+  document.documentElement.classList.toggle("dark", readStoredTheme() === "dark");
+}
+
 /**
  * One shared light/dark preference for the entire app — public site, login/
- * register/reset pages, admin dashboard, and family dashboard. The `dark`
- * class is applied to this provider's own wrapper element (not `<html>`),
- * which still works everywhere since this wraps the whole route tree. This
- * is a pure client-rendered SPA (no SSR), so reading localStorage in the
- * lazy useState initializer below runs before first paint — no
- * flash-of-wrong-theme script is needed. Defaults to light for anyone with
- * no stored preference yet, regardless of which route they land on first.
+ * register/reset pages, admin dashboard, and family dashboard.
+ *
+ * The `dark` class goes on `<html>`, not a wrapper `<div>` inside the React
+ * tree. That used to be the bug: `body { @apply bg-background text-foreground }`
+ * sits OUTSIDE any in-tree wrapper (body is an ancestor of #root, not a
+ * descendant), so body's own color/background always resolved the :root
+ * (light) tokens regardless of theme. Any element with its own `text-*`/
+ * `bg-*` class re-resolved correctly wherever it sat, but anything relying
+ * on inherited color (a bare `<h2>`, `<p>` with no color class) inherited
+ * body's permanently-light computed color — dark text landing on a dark
+ * background painted by sibling elements that *did* set their own bg-*
+ * class. Putting `.dark` on `<html>` makes body itself a descendant, so
+ * `--foreground`/`--background` resolve correctly at the body level and
+ * every inheriting element below it is correct for free — no need to add an
+ * explicit `text-foreground` to every heading/paragraph in the app.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
@@ -40,7 +58,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div className={`min-h-screen ${theme === "dark" ? "dark" : ""}`}>{children}</div>
+      <div className="min-h-screen">{children}</div>
     </ThemeContext.Provider>
   );
 }

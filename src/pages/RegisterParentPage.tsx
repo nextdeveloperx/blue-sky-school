@@ -4,8 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { MailCheck, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import logo from "@/assets/blue-sky-school-logo.png";
 import {
   Form,
   FormControl,
@@ -66,27 +68,46 @@ export default function RegisterParentPage() {
 
   if (awaitingConfirmation) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-        <div className="max-w-sm w-full mx-auto space-y-4 text-center">
-          <h1 className="font-heading font-bold text-xl text-foreground">Check your email</h1>
-          <p className="text-muted-foreground text-sm">
-            Confirm your email address, then{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">
-              sign in
-            </Link>
-            .
-          </p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-6"
+        style={{ background: "var(--hero-gradient)" }}
+      >
+        <div className="card-elevated max-w-sm w-full mx-auto p-8 space-y-5 text-center bg-card">
+          <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <MailCheck className="w-7 h-7 text-primary" aria-hidden="true" />
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="font-heading font-bold text-xl text-foreground">Check your email</h1>
+            <p className="text-muted-foreground text-sm">
+              We've sent a confirmation link to your inbox. Click it to activate your account, then
+              come back and sign in.
+            </p>
+          </div>
+          <Button asChild className="w-full">
+            <Link to="/login">Go to sign in</Link>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-      <div className="max-w-sm w-full mx-auto space-y-6">
-        <h1 className="font-heading font-bold text-xl text-foreground text-center">
-          Parent Account
-        </h1>
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ background: "var(--hero-gradient)" }}
+    >
+      <div className="card-elevated max-w-sm w-full mx-auto p-8 space-y-6 bg-card">
+        <div className="flex flex-col items-center text-center gap-2">
+          <img src={logo} alt="Blue Sky School crest" className="w-12 h-12 object-contain" />
+          <div className="flex items-center gap-1.5 text-primary">
+            <GraduationCap className="w-4 h-4" aria-hidden="true" />
+            <span className="text-xs font-semibold uppercase tracking-wide">Family Portal</span>
+          </div>
+          <h1 className="font-heading font-bold text-xl text-foreground">Create your parent account</h1>
+          <p className="text-muted-foreground text-sm">
+            Track your child's results, fees, and payments in one place.
+          </p>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

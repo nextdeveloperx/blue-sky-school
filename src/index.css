@@ -60,6 +60,19 @@
     --sidebar-accent-foreground: 210 79% 51%;
     --sidebar-border: 210 30% 90%;
     --sidebar-ring: 210 79% 51%;
+
+    /* Chart series colors (admin dashboard) - brand blue/yellow plus two
+       extra hues so multi-series comparisons stay readable. */
+    --chart-1: 210 79% 51%;
+    --chart-2: 45 97% 58%;
+    --chart-3: 160 60% 42%;
+    --chart-4: 0 72% 58%;
+    --chart-5: 265 60% 58%;
+
+    /* Admin "app" background: a faint tint off pure white so cards and
+       panels actually read as distinct surfaces instead of blending into
+       the page. */
+    --admin-background: 210 45% 97%;
   }
 
   .dark {
@@ -108,6 +121,14 @@
     --sidebar-accent-foreground: 210 85% 62%;
     --sidebar-border: 215 22% 24%;
     --sidebar-ring: 210 85% 62%;
+
+    --chart-1: 210 85% 62%;
+    --chart-2: 45 97% 62%;
+    --chart-3: 160 55% 50%;
+    --chart-4: 0 70% 62%;
+    --chart-5: 265 60% 68%;
+
+    --admin-background: 215 30% 12%;
   }
 }
 
