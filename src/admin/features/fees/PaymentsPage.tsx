@@ -23,6 +23,7 @@ import { formatMinor, isValidMinor, sumMinor } from "@/lib/finance/money";
 import { StatusBadge } from "@/components/StatusBadge";
 import { InfoHelp } from "@/components/InfoHelp";
 import { StudentSearchCombobox, type StudentSearchResult } from "./StudentSearchCombobox";
+import { Search } from "lucide-react";
 
 type PaymentMethod = "cash" | "upi" | "bank_transfer";
 
@@ -174,6 +175,13 @@ export default function PaymentsPage() {
         }
         onSelect={selectStudent}
       />
+
+      {!studentId && (
+        <section className="card-elevated p-10 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
+          <Search className="h-8 w-8 opacity-40" />
+          <p>Search for a student to record a payment.</p>
+        </section>
+      )}
 
       {studentId && (
         <>
