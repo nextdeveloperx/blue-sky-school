@@ -81,8 +81,16 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-secondary-foreground/20 text-center text-sm text-secondary-foreground/60">
+        <div className="mt-8 pt-6 border-t border-secondary-foreground/20 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center text-sm text-secondary-foreground/60">
           <p>© {new Date().getFullYear()} Blue Sky School. All rights reserved.</p>
+          <span className="hidden sm:inline">·</span>
+          <Link to="/privacy" className="hover:text-accent transition-colors">
+            Privacy Policy
+          </Link>
+          <span className="hidden sm:inline">·</span>
+          <Link to="/terms" className="hover:text-accent transition-colors">
+            Terms &amp; Conditions
+          </Link>
         </div>
       </div>
     </footer>
